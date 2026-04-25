@@ -12,6 +12,9 @@ if (!isLoggedIn() || !isProfessor()) {
 
 $userId = getCurrentUserId();
 $professorCourses = getCourses($userId);
+$recentQuestions = getRecentQuestions($userId, 'professor');
+$upcomingAppointments = getUpcomingAppointmentsList($userId, 'professor');
+$analytics = getProfessorAnalytics($userId);
 $pageTitle = 'لوحة تحكم الدكتور';
 ?>
 
@@ -55,7 +58,7 @@ $pageTitle = 'لوحة تحكم الدكتور';
                 <i class="fas fa-question-circle"></i>
             </div>
             <div class="stat-info">
-                <h3>0</h3>
+                <h3><?php echo getPendingQuestionsCount($userId, 'professor'); ?></h3>
                 <p>الأسئلة المعلقة</p>
             </div>
         </div>
@@ -65,7 +68,7 @@ $pageTitle = 'لوحة تحكم الدكتور';
                 <i class="fas fa-calendar-check"></i>
             </div>
             <div class="stat-info">
-                <h3>0</h3>
+                <h3><?php echo getUpcomingAppointmentsCount($userId, 'professor'); ?></h3>
                 <p>المواعيد القادمة</p>
             </div>
         </div>
@@ -134,10 +137,23 @@ $pageTitle = 'لوحة تحكم الدكتور';
                 </a>
             </div>
             
-            <div class="empty-state">
-                <i class="fas fa-question-circle"></i>
-                <p>لا توجد أسئلة جديدة</p>
-            </div>
+            <?php if (empty($recentQuestions)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-question-circle"></i>
+                    <p>لا توجد أسئلة جديدة</p>
+                </div>
+            <?php else: ?>
+                <ul class="list-group">
+                    <?php foreach ($recentQuestions as $question): ?>
+                        <li class="list-group-item" style="padding: 15px; border-bottom: 1px solid #eee;">
+                            <strong><?php echo htmlspecialchars($question['course_name']); ?>:</strong>
+                            <?php echo htmlspecialchars($question['question_text']); ?>
+                            <br>
+                            <small class="text-muted">من الطالب: <?php echo htmlspecialchars($question['student_name']); ?> - <?php echo formatDate($question['created_at']); ?></small>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
 
         <div class="dashboard-section">
@@ -148,9 +164,39 @@ $pageTitle = 'لوحة تحكم الدكتور';
                 </a>
             </div>
             
-            <div class="empty-state">
-                <i class="fas fa-calendar-times"></i>
-                <p>لا توجد مواعيد قادمة</p>
+            <?php if (empty($upcomingAppointments)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>لا توجد مواعيد قادمة</p>
+                </div>
+            <?php else: ?>
+                <ul class="list-group">
+                    <?php foreach ($upcomingAppointments as $appointment): ?>
+                        <li class="list-group-item" style="padding: 15px; border-bottom: 1px solid #eee;">
+                            <strong>موعد مع الطالب: <?php echo htmlspecialchars($appointment['other_party']); ?></strong>
+                            <br>
+                            التاريخ: <?php echo formatDate($appointment['date_time']); ?>
+                            (<?php echo $appointment['duration']; ?> دقيقة)
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="dashboard-section" style="margin-top: 30px;">
+        <div class="section-header">
+            <h2><i class="fas fa-chart-pie"></i> التحليلات المتقدمة</h2>
+        </div>
+        <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;">
+            <div class="chart-container" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">توزيع الطلاب على الكورسات</h3>
+                <canvas id="studentsChart"></canvas>
+            </div>
+            <div class="chart-container" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">حالة الأسئلة</h3>
+                <canvas id="questionsChart"></canvas>
             </div>
         </div>
     </div>
@@ -341,5 +387,70 @@ $pageTitle = 'لوحة تحكم الدكتور';
     }
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const analytics = <?php echo json_encode($analytics); ?>;
+    
+    // Students per course chart
+    const ctxStudents = document.getElementById('studentsChart').getContext('2d');
+    if (analytics.courses.length > 0) {
+        new Chart(ctxStudents, {
+            type: 'bar',
+            data: {
+                labels: analytics.courses,
+                datasets: [{
+                    label: 'عدد الطلاب',
+                    data: analytics.students_count,
+                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    // Questions Status chart
+    const ctxQuestions = document.getElementById('questionsChart').getContext('2d');
+    const totalQuestions = analytics.questions.pending + analytics.questions.answered;
+    
+    if (totalQuestions > 0) {
+        new Chart(ctxQuestions, {
+            type: 'doughnut',
+            data: {
+                labels: ['أسئلة معلقة', 'تمت الإجابة'],
+                datasets: [{
+                    data: [analytics.questions.pending, analytics.questions.answered],
+                    backgroundColor: [
+                        'rgba(231, 76, 60, 0.8)',
+                        'rgba(46, 204, 113, 0.8)'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -12,6 +12,8 @@ if (!isLoggedIn() || !isStudent()) {
 
 $userId = getCurrentUserId();
 $studentCourses = getStudentCourses($userId);
+$upcomingAppointments = getUpcomingAppointmentsList($userId, 'student');
+$analytics = getStudentAnalytics($userId);
 $pageTitle = 'لوحة تحكم الطالب';
 ?>
 
@@ -37,7 +39,7 @@ $pageTitle = 'لوحة تحكم الطالب';
                 <i class="fas fa-file-alt"></i>
             </div>
             <div class="stat-info">
-                <h3>0</h3>
+                <h3><?php echo getStudentMaterialsCount($userId); ?></h3>
                 <p>المواد الدراسية</p>
             </div>
         </div>
@@ -47,7 +49,7 @@ $pageTitle = 'لوحة تحكم الطالب';
                 <i class="fas fa-question-circle"></i>
             </div>
             <div class="stat-info">
-                <h3>0</h3>
+                <h3><?php echo getPendingQuestionsCount($userId, 'student'); ?></h3>
                 <p>الأسئلة المعلقة</p>
             </div>
         </div>
@@ -57,7 +59,7 @@ $pageTitle = 'لوحة تحكم الطالب';
                 <i class="fas fa-calendar-check"></i>
             </div>
             <div class="stat-info">
-                <h3>0</h3>
+                <h3><?php echo getUpcomingAppointmentsCount($userId, 'student'); ?></h3>
                 <p>المواعيد القادمة</p>
             </div>
         </div>
@@ -121,10 +123,22 @@ $pageTitle = 'لوحة تحكم الطالب';
                 <h2><i class="fas fa-bell"></i> الإشعارات الأخيرة</h2>
             </div>
             
-            <div class="empty-state">
-                <i class="fas fa-bell-slash"></i>
-                <p>لا توجد إشعارات جديدة</p>
-            </div>
+            <?php if (empty($recentNotifications)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>لا توجد إشعارات جديدة</p>
+                </div>
+            <?php else: ?>
+                <ul class="list-group">
+                    <?php foreach ($recentNotifications as $notification): ?>
+                        <li class="list-group-item" style="padding: 15px; border-bottom: 1px solid #eee;">
+                            <?php echo htmlspecialchars($notification['message']); ?>
+                            <br>
+                            <small class="text-muted"><?php echo formatDate($notification['created_at']); ?></small>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
 
         <div class="dashboard-section">
@@ -135,9 +149,39 @@ $pageTitle = 'لوحة تحكم الطالب';
                 </a>
             </div>
             
-            <div class="empty-state">
-                <i class="fas fa-calendar-times"></i>
-                <p>لا توجد مواعيد قادمة</p>
+            <?php if (empty($upcomingAppointments)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>لا توجد مواعيد قادمة</p>
+                </div>
+            <?php else: ?>
+                <ul class="list-group">
+                    <?php foreach ($upcomingAppointments as $appointment): ?>
+                        <li class="list-group-item" style="padding: 15px; border-bottom: 1px solid #eee;">
+                            <strong>موعد مع دكتور: <?php echo htmlspecialchars($appointment['other_party']); ?></strong>
+                            <br>
+                            التاريخ: <?php echo formatDate($appointment['date_time']); ?>
+                            (<?php echo $appointment['duration']; ?> دقيقة)
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+
+        <!-- Analytics Section -->
+        <div class="dashboard-section" style="margin-top: 30px;">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-pie"></i> التحليلات الأكاديمية</h2>
+            </div>
+            <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;">
+                <div class="chart-container" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">حالة المواعيد</h3>
+                    <canvas id="appointmentsChart"></canvas>
+                </div>
+                <div class="chart-container" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0;">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">المواد الدراسية في كل كورس</h3>
+                    <canvas id="materialsChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -328,5 +372,71 @@ $pageTitle = 'لوحة تحكم الطالب';
     }
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const analytics = <?php echo json_encode($analytics); ?>;
+    
+    // Materials per course chart
+    const ctxMaterials = document.getElementById('materialsChart').getContext('2d');
+    if (analytics.courses.length > 0) {
+        new Chart(ctxMaterials, {
+            type: 'bar',
+            data: {
+                labels: analytics.courses,
+                datasets: [{
+                    label: 'عدد المواد الدراسية',
+                    data: analytics.materials_count,
+                    backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                    borderColor: 'rgba(39, 174, 96, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    // Appointments Status chart
+    const ctxAppts = document.getElementById('appointmentsChart').getContext('2d');
+    const totalAppts = analytics.appointments.pending + analytics.appointments.completed + analytics.appointments.cancelled;
+    
+    if (totalAppts > 0) {
+        new Chart(ctxAppts, {
+            type: 'doughnut',
+            data: {
+                labels: ['مواعيد معلقة', 'مواعيد مكتملة', 'مواعيد ملغاة'],
+                datasets: [{
+                    data: [analytics.appointments.pending, analytics.appointments.completed, analytics.appointments.cancelled],
+                    backgroundColor: [
+                        'rgba(243, 156, 18, 0.8)',
+                        'rgba(46, 204, 113, 0.8)',
+                        'rgba(231, 76, 60, 0.8)'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

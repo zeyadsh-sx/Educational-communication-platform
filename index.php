@@ -9,31 +9,31 @@ $pageTitle = 'الرئيسية';
 
 <div class="hero-section">
     <div class="hero-content">
-        <h1>منصة الاتصال التعليمي</h1>
-        <p>منصة متكاملة لتسهيل التواصل بين الطلاب وأساتذتهم</p>
+        <h1><?php echo __('hero_title'); ?></h1>
+        <p><?php echo __('hero_subtitle'); ?></p>
         
         <?php if (!isLoggedIn()): ?>
             <div class="hero-buttons">
                 <a href="/auth/login.php" class="btn btn-primary btn-lg">
-                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                    <i class="fas fa-sign-in-alt"></i> <?php echo __('login'); ?>
                 </a>
                 <a href="/auth/register.php" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-user-plus"></i> إنشاء حساب
+                    <i class="fas fa-user-plus"></i> <?php echo __('register'); ?>
                 </a>
             </div>
         <?php else: ?>
             <div class="hero-buttons">
                 <?php if (isProfessor()): ?>
                     <a href="/admin/dashboard.php" class="btn btn-primary btn-lg">
-                        <i class="fas fa-tachometer-alt"></i> لوحة التحكم
+                        <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
                 <?php else: ?>
                     <a href="/student/dashboard.php" class="btn btn-primary btn-lg">
-                        <i class="fas fa-tachometer-alt"></i> لوحة التحكم
+                        <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
                 <?php endif; ?>
                 <a href="/courses/list.php" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-book"></i> تصفح الكورسات
+                    <i class="fas fa-book"></i> <?php echo __('browse_courses'); ?>
                 </a>
             </div>
         <?php endif; ?>
@@ -42,18 +42,18 @@ $pageTitle = 'الرئيسية';
 
 <div class="features-section">
     <div class="container">
-        <h2 class="section-title">مميزات المنصة</h2>
+        <h2 class="section-title"><?php echo __('features_title'); ?></h2>
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">
                     <i class="fas fa-chalkboard-teacher"></i>
                 </div>
-                <h3>للأساتذة</h3>
+                <h3><?php echo __('prof_features_title'); ?></h3>
                 <ul>
-                    <li>رفع المحاضرات والمواد الدراسية</li>
-                    <li>إدارة الساعات المكتبية</li>
-                    <li>الرد على أسئلة الطلاب</li>
-                    <li>نشر الإعلانات</li>
+                    <li><?php echo __('prof_feature_1'); ?></li>
+                    <li><?php echo __('prof_feature_2'); ?></li>
+                    <li><?php echo __('prof_feature_3'); ?></li>
+                    <li><?php echo __('prof_feature_4'); ?></li>
                 </ul>
             </div>
             
@@ -61,12 +61,12 @@ $pageTitle = 'الرئيسية';
                 <div class="feature-icon">
                     <i class="fas fa-user-graduate"></i>
                 </div>
-                <h3>للطلاب</h3>
+                <h3><?php echo __('student_features_title'); ?></h3>
                 <ul>
-                    <li>الوصول للمواد الدراسية</li>
-                    <li>طرح الأسئلة والحصول على إجابات</li>
-                    <li>حجز المواعيد المكتبية</li>
-                    <li>متابعة الإعلانات</li>
+                    <li><?php echo __('student_feature_1'); ?></li>
+                    <li><?php echo __('student_feature_2'); ?></li>
+                    <li><?php echo __('student_feature_3'); ?></li>
+                    <li><?php echo __('student_feature_4'); ?></li>
                 </ul>
             </div>
             
@@ -74,12 +74,12 @@ $pageTitle = 'الرئيسية';
                 <div class="feature-icon">
                     <i class="fas fa-shield-alt"></i>
                 </div>
-                <h3>أمان عالي</h3>
+                <h3><?php echo __('security_features_title'); ?></h3>
                 <ul>
-                    <li>تشفير البيانات</li>
-                    <li>حماية الملفات</li>
-                    <li>إدارة صلاحيات</li>
-                    <li>نسخ احتياطية</li>
+                    <li><?php echo __('security_feature_1'); ?></li>
+                    <li><?php echo __('security_feature_2'); ?></li>
+                    <li><?php echo __('security_feature_3'); ?></li>
+                    <li><?php echo __('security_feature_4'); ?></li>
                 </ul>
             </div>
         </div>
@@ -92,22 +92,22 @@ $pageTitle = 'الرئيسية';
             <div class="stat-item">
                 <i class="fas fa-users"></i>
                 <h3>+1000</h3>
-                <p>طالب وطالبة</p>
+                <p><?php echo __('stat_students'); ?></p>
             </div>
             <div class="stat-item">
                 <i class="fas fa-chalkboard-teacher"></i>
                 <h3>+50</h3>
-                <p>دكتور ودكتورة</p>
+                <p><?php echo __('stat_profs'); ?></p>
             </div>
             <div class="stat-item">
                 <i class="fas fa-book"></i>
                 <h3>+200</h3>
-                <p>كورس دراسي</p>
+                <p><?php echo __('stat_courses'); ?></p>
             </div>
             <div class="stat-item">
                 <i class="fas fa-file-alt"></i>
                 <h3>+5000</h3>
-                <p>مادة دراسية</p>
+                <p><?php echo __('stat_materials'); ?></p>
             </div>
         </div>
     </div>

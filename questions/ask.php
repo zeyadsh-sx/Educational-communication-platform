@@ -14,13 +14,17 @@ $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $course_id = $_POST['course_id'] ?? 0;
-    $question_text = trim($_POST['question_text'] ?? '');
-    
-    if (empty($question_text) || empty($course_id)) {
-        $message = 'Please fill in all required fields';
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid security token. Please try again.';
         $messageType = 'error';
     } else {
+        $course_id = $_POST['course_id'] ?? 0;
+        $question_text = trim($_POST['question_text'] ?? '');
+        
+        if (empty($question_text) || empty($course_id)) {
+            $message = 'Please fill in all required fields';
+            $messageType = 'error';
+        } else {
         $database = new Database();
         $conn = $database->connect();
         
@@ -72,6 +76,7 @@ $pageTitle = 'طرح سؤال';
         <?php endif; ?>
 
         <form method="POST" action="" class="question-form">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="course_id">الكورس <span class="required">*</span></label>
                 <input type="number" 

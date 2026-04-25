@@ -1,0 +1,17 @@
+# Disable execution of PHP scripts and other executable files
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|pl|py|jsp|asp|htm|html|shtml|sh|cgi|exe|bat|cmd|vbs)$">
+    SetHandler None
+    ForceType text/plain
+</FilesMatch>
+
+# Prevent viewing directory contents
+Options -Indexes
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# Protect the htaccess file itself
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>

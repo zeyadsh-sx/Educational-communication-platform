@@ -14,14 +14,18 @@ $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $professor_id = $_POST['professor_id'] ?? 0;
-    $appointment_date = $_POST['appointment_date'] ?? '';
-    $notes = trim($_POST['notes'] ?? '');
-    
-    if (empty($professor_id) || empty($appointment_date)) {
-        $message = 'Please fill in all required fields';
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid security token. Please try again.';
         $messageType = 'error';
     } else {
+        $professor_id = $_POST['professor_id'] ?? 0;
+        $appointment_date = $_POST['appointment_date'] ?? '';
+        $notes = trim($_POST['notes'] ?? '');
+        
+        if (empty($professor_id) || empty($appointment_date)) {
+            $message = 'Please fill in all required fields';
+            $messageType = 'error';
+        } else {
         $database = new Database();
         $conn = $database->connect();
         
@@ -34,12 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $notes
         ]);
         
-        if ($result) {
-            $message = 'Appointment booked successfully!';
-            $messageType = 'success';
-        } else {
-            $message = 'Error booking appointment';
-            $messageType = 'error';
+            if ($result) {
+                $message = 'Appointment booked successfully!';
+                $messageType = 'success';
+            } else {
+                $message = 'Error booking appointment';
+                $messageType = 'error';
+            }
         }
     }
 }
@@ -63,6 +68,7 @@ $pageTitle = 'حجز موعد';
         <?php endif; ?>
 
         <form method="POST" action="" class="appointment-form">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="professor_id">الدكتور <span class="required">*</span></label>
                 <input type="number" 

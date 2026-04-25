@@ -14,11 +14,15 @@ $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $courseName = trim($_POST['course_name'] ?? '');
-    $courseCode = trim($_POST['course_code'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    
-    if (empty($courseName) || empty($courseCode)) {
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid security token. Please try again.';
+        $messageType = 'error';
+    } else {
+        $courseName = trim($_POST['course_name'] ?? '');
+        $courseCode = trim($_POST['course_code'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        
+        if (empty($courseName) || empty($courseCode)) {
         $message = 'Please fill in all required fields ';
         $messageType = 'error';
     } elseif (courseCodeExists($courseCode)) {
@@ -53,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         
         <form method="POST" action="" class="course-form">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="course_name">Course Name <span class="required">*</span></label>
                 <input type="text" 

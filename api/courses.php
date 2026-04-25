@@ -162,25 +162,43 @@ try {
             break;
             
         case 'DELETE':
-            // DELETE /api/courses/{id}
-            requireProfessor();
-            
-            if (!$courseId) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Course ID required']);
-                exit;
+            if ($courseId && $subResource === 'students' && !empty($parts[2])) {
+                // DELETE /api/courses/{id}/students/{student_id}
+                requireProfessor();
+                
+                $studentId = (int)$parts[2];
+                $course = getCourseById($courseId);
+                
+                if (!$course || $course['professor_id'] != $_SESSION['user_id']) {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Not authorized to remove students from this course']);
+                    exit;
+                }
+                
+                $result = unenrollStudent($courseId, $studentId);
+                http_response_code($result['success'] ? 200 : 400);
+                echo json_encode($result);
+            } else {
+                // DELETE /api/courses/{id}
+                requireProfessor();
+                
+                if (!$courseId) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Course ID required']);
+                    exit;
+                }
+                
+                $course = getCourseById($courseId);
+                if (!$course || $course['professor_id'] != $_SESSION['user_id']) {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Not authorized to delete this course']);
+                    exit;
+                }
+                
+                $result = deleteCourse($courseId);
+                http_response_code($result['success'] ? 200 : 400);
+                echo json_encode($result);
             }
-            
-            $course = getCourseById($courseId);
-            if (!$course || $course['professor_id'] != $_SESSION['user_id']) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Not authorized to delete this course']);
-                exit;
-            }
-            
-            $result = deleteCourse($courseId);
-            http_response_code($result['success'] ? 200 : 400);
-            echo json_encode($result);
             break;
             
         default:

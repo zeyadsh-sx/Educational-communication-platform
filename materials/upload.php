@@ -14,54 +14,70 @@ $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = trim($_POST['title'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $course_id = $_POST['course_id'] ?? 0;
-    
-    if (empty($title) || empty($course_id)) {
-        $message = 'Please fill in all required fields';
-        $messageType = 'error';
-    } elseif (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-        $message = 'Please select a file to upload';
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid security token. Please try again.';
         $messageType = 'error';
     } else {
-        $file = $_FILES['file'];
-        $fileName = $file['name'];
-        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-        $newFileName = time() . '_' . $fileName;
-        $uploadPath = __DIR__ . '/../uploads/materials/' . $newFileName;
+        $title = trim($_POST['title'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $course_id = $_POST['course_id'] ?? 0;
         
-        // Create directory if it doesn't exist
-        if (!is_dir(dirname($uploadPath))) {
-            mkdir(dirname($uploadPath), 0755, true);
-        }
-        
-        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            $database = new Database();
-            $conn = $database->connect();
-            
-            $stmt = $conn->prepare("INSERT INTO materials (title, description, file_name, file_path, file_type, course_id, professor_id, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $result = $stmt->execute([
-                $title,
-                $description,
-                $fileName,
-                $newFileName,
-                $fileType,
-                $course_id,
-                getCurrentUserId(),
-                getCurrentUserId()
-            ]);
-            
-            if ($result) {
-                $message = 'Material uploaded successfully!';
-                $messageType = 'success';
-            } else {
-                $message = 'Error saving material to database';
-                $messageType = 'error';
-            }
-        } else {
-            $message = 'Error uploading file';
+        if (empty($title) || empty($course_id)) {
+            $message = 'Please fill in all required fields';
             $messageType = 'error';
+        } elseif (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            $message = 'Please select a file to upload';
+            $messageType = 'error';
+        } else {
+            $file = $_FILES['file'];
+            $fileName = $file['name'];
+            $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            
+            $allowedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'zip'];
+            $disallowedExtensions = ['php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'exe', 'sh', 'bat', 'cmd', 'vbs'];
+            
+            if (!in_array($fileType, $allowedExtensions) || in_array($fileType, $disallowedExtensions)) {
+                $message = 'Invalid file type. Only PDF, DOC, PPT, TXT, and ZIP are allowed.';
+                $messageType = 'error';
+            } else {
+                $newFileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $fileType;
+                $uploadPath = __DIR__ . '/../uploads/materials/' . $newFileName;
+                
+                // Create directory if it doesn't exist
+                if (!is_dir(dirname($uploadPath))) {
+                    mkdir(dirname($uploadPath), 0755, true);
+                }
+                
+                if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+                    $database = new Database();
+                    $conn = $database->connect();
+                    
+                    $stmt = $conn->prepare("INSERT INTO materials (title, description, file_name, file_path, file_type, course_id, professor_id, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    $result = $stmt->execute([
+                        $title,
+                        $description,
+                        $fileName,
+                        $newFileName,
+                        $fileType,
+                        $course_id,
+                        getCurrentUserId(),
+                        getCurrentUserId()
+                    ]);
+                    
+                    if ($result) {
+                        $message = 'Material uploaded successfully!';
+                        $messageType = 'success';
+                    } else {
+                        $message = 'Error saving material to database';
+                        $messageType = 'error';
+                        // Clean up uploaded file if database insert fails
+                        unlink($uploadPath);
+                    }
+                } else {
+                    $message = 'Error uploading file';
+                    $messageType = 'error';
+                }
+            }
         }
     }
 }
@@ -85,6 +101,7 @@ $pageTitle = 'رفع مادة دراسية';
         <?php endif; ?>
 
         <form method="POST" action="" class="upload-form" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="title">عنوان المادة <span class="required">*</span></label>
                 <input type="text" 

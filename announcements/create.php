@@ -14,15 +14,19 @@ $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = trim($_POST['title'] ?? '');
-    $content = trim($_POST['content'] ?? '');
-    $course_id = $_POST['course_id'] ?? 0;
-    $priority = $_POST['priority'] ?? 'medium';
-    
-    if (empty($title) || empty($content)) {
-        $message = 'Please fill in all required fields';
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $message = 'Invalid security token. Please try again.';
         $messageType = 'error';
     } else {
+        $title = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
+        $course_id = $_POST['course_id'] ?? 0;
+        $priority = $_POST['priority'] ?? 'medium';
+        
+        if (empty($title) || empty($content)) {
+            $message = 'Please fill in all required fields';
+            $messageType = 'error';
+        } else {
         $database = new Database();
         $conn = $database->connect();
         
@@ -36,12 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             getCurrentUserId()
         ]);
         
-        if ($result) {
-            $message = 'Announcement created successfully!';
-            $messageType = 'success';
-        } else {
-            $message = 'Error creating announcement';
-            $messageType = 'error';
+            if ($result) {
+                $message = 'Announcement created successfully!';
+                $messageType = 'success';
+            } else {
+                $message = 'Error creating announcement';
+                $messageType = 'error';
+            }
         }
     }
 }
@@ -65,6 +70,7 @@ $pageTitle = 'إنشاء إعلان';
         <?php endif; ?>
 
         <form method="POST" action="" class="announcement-form">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="title">العنوان <span class="required">*</span></label>
                 <input type="text" 

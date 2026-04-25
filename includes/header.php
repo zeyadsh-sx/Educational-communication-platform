@@ -4,8 +4,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 ?>
+<?php
+require_once __DIR__ . '/functions.php';
+$lang = $_SESSION['lang'] ?? 'ar';
+$dir = $lang === 'ar' ? 'rtl' : 'ltr';
+?>
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -225,28 +230,36 @@ if (session_status() === PHP_SESSION_NONE) {
 <body>
     <nav class="navbar">
         <a href="/index.php" class="navbar-brand">
-            <i class="fas fa-graduation-cap"></i> Educational communication platform
+            <i class="fas fa-graduation-cap"></i> <?php echo __('hero_title'); ?>
         </a>
         
         <div class="navbar-menu">
             <a href="/courses/list.php">
-                <i class="fas fa-book"></i> Courses
+                <i class="fas fa-book"></i> <?php echo __('courses'); ?>
             </a>
             
             <?php if (isset($_SESSION['user_id'])): ?>
                 <?php if ($_SESSION['user_type'] === 'professor'): ?>
                     <a href="/admin/dashboard.php">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                        <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
                 <?php else: ?>
                     <a href="/student/dashboard.php">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                        <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
         
         <div class="navbar-user">
+            <?php
+            // Logic for switching language
+            $switch_lang = $lang === 'ar' ? 'en' : 'ar';
+            ?>
+            <a href="?lang=<?php echo $switch_lang; ?>" style="color: white; margin-right: 15px; text-decoration: none;">
+                <i class="fas fa-globe"></i> <?php echo __('switch_lang'); ?>
+            </a>
+
             <?php if (isset($_SESSION['user_id'])): ?>
                 <div class="user-info">
                     <div class="user-avatar">
@@ -260,11 +273,11 @@ if (session_status() === PHP_SESSION_NONE) {
                     </div>
                 </div>
                 <a href="/auth/logout.php" class="btn-logout">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                    <i class="fas fa-sign-out-alt"></i> <?php echo __('logout'); ?>
                 </a>
             <?php else: ?>
                 <a href="/auth/login.php" style="color: white;">
-                    <i class="fas fa-sign-in-alt"></i> Login
+                    <i class="fas fa-sign-in-alt"></i> <?php echo __('login'); ?>
                 </a>
             <?php endif; ?>
         </div>

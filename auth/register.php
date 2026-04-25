@@ -2,6 +2,10 @@
 
 session_start();
 require_once '../config/database.php';
+require_once '../includes/functions.php';
+
+$lang = $_SESSION['lang'] ?? 'ar';
+$dir = $lang === 'ar' ? 'rtl' : 'ltr';
 
 $error = '';
 $success = '';
@@ -16,14 +20,17 @@ if (isset($_SESSION['user_id'])) {
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-    $full_name = $_POST['full_name'] ?? '';
-    $user_type = $_POST['user_type'] ?? 'student';
-    
-    if (empty($username) || empty($email) || empty($password) || empty($full_name)) {
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid security token. Please refresh the page and try again.';
+    } else {
+        $username = $_POST['username'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+        $full_name = $_POST['full_name'] ?? '';
+        $user_type = $_POST['user_type'] ?? 'student';
+        
+        if (empty($username) || empty($email) || empty($password) || empty($full_name)) {
         $error = 'Please fill in all required fields.';
     } elseif ($password !== $confirm_password) {
         $error = 'Passwords do not match.';
@@ -51,11 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New registration - Education platform</title>
+    <title><?php echo __('register_title'); ?> - <?php echo __('hero_title'); ?></title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -221,8 +228,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="register-container">
         <div class="register-header">
             <i class="fas fa-user-plus"></i>
-            <h1>Education platform</h1>
-            <p>Create a new account</p>
+            <h1><?php echo __('hero_title'); ?></h1>
+            <p><?php echo __('register_title'); ?></p>
         </div>
         
         <?php if ($error): ?>
@@ -234,51 +241,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         
         <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
-                <label for="full_name">Full Name *</label>
+                <label for="full_name"><?php echo __('full_name_label'); ?></label>
                 <input type="text" id="full_name" name="full_name" required 
-                       placeholder="Enter your full name">
+                       placeholder="<?php echo __('full_name_placeholder'); ?>">
             </div>
             
             <div class="form-group">
-                <label for="username">Username *</label>
+                <label for="username"><?php echo __('username_label'); ?></label>
                 <input type="text" id="username" name="username" required 
-                       placeholder="Enter your username">
+                       placeholder="<?php echo __('username_placeholder'); ?>">
             </div>
             
             <div class="form-group">
-                <label for="email">Email *</label>
+                <label for="email"><?php echo __('email_label'); ?></label>
                 <input type="email" id="email" name="email" required 
-                       placeholder="Enter your email">
+                       placeholder="<?php echo __('email_placeholder'); ?>">
             </div>
             
             <div class="form-group">
-                <label for="user_type">Account Type *</label>
+                <label for="user_type"><?php echo __('account_type_label'); ?></label>
                 <select id="user_type" name="user_type" required>
-                    <option value="student">Student</option>
-                    <option value="professor">Professor</option>
+                    <option value="student"><?php echo __('student'); ?></option>
+                    <option value="professor"><?php echo __('professor'); ?></option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label for="password">Password *</label>
+                <label for="password"><?php echo __('password_label'); ?></label>
                 <input type="password" id="password" name="password" required 
-                       placeholder="Enter your password (at least 6 characters)">
+                       placeholder="<?php echo __('password_placeholder'); ?>">
             </div>
             
             <div class="form-group">
-                <label for="confirm_password">Confirm Password *</label>
+                <label for="confirm_password"><?php echo __('password_confirm_label'); ?></label>
                 <input type="password" id="confirm_password" name="confirm_password" required 
-                       placeholder="Re-enter your password">
+                       placeholder="<?php echo __('password_confirm_placeholder'); ?>">
             </div>
             
             <button type="submit" class="btn-register">
-                <i class="fas fa-user-plus"></i> Register
+                <i class="fas fa-user-plus"></i> <?php echo __('register'); ?>
             </button>
         </form>
         
         <div class="login-link">
-            <p>Already have an account? <a href="login.php">Login</a></p>
+            <p><?php echo __('have_account'); ?> <a href="login.php"><?php echo __('login'); ?></a></p>
         </div>
     </div>
 </body>

@@ -2,6 +2,10 @@
 
 session_start();
 require_once '../config/database.php';
+require_once '../includes/functions.php';
+
+$lang = $_SESSION['lang'] ?? 'ar';
+$dir = $lang === 'ar' ? 'rtl' : 'ltr';
 
 $error = '';
 $success = '';
@@ -19,10 +23,13 @@ if (isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($email) || empty($password)) {
+    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid security token. Please refresh the page and try again.';
+    } else {
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($email) || empty($password)) {
         $error = 'الرجاء إدخال البريد الإلكتروني وكلمة المرور';
     } else {
         try {
@@ -52,11 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Learning Platform</title>
+    <title><?php echo __('login_title'); ?> - <?php echo __('hero_title'); ?></title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -221,8 +228,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-header">
             <i class="fas fa-graduation-cap"></i>
-            <h1>Learning Platform</h1>
-            <p>Login</p>
+            <h1><?php echo __('hero_title'); ?></h1>
+            <p><?php echo __('login_title'); ?></p>
         </div>
         
         <?php if ($error): ?>
@@ -234,25 +241,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         
         <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
-                <label for="email">Email</label>
+                <label for="email"><?php echo __('email_label'); ?></label>
                 <input type="email" id="email" name="email" required 
-                       placeholder="Enter your email">
+                       placeholder="<?php echo __('email_placeholder'); ?>">
             </div>
             
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password"><?php echo __('password_label'); ?></label>
                 <input type="password" id="password" name="password" required 
-                       placeholder="Enter your password">
+                       placeholder="<?php echo __('password_placeholder'); ?>">
             </div>
             
             <button type="submit" class="btn-login">
-                <i class="fas fa-sign-in-alt"></i> Login
+                <i class="fas fa-sign-in-alt"></i> <?php echo __('login'); ?>
             </button>
         </form>
         
         <div class="register-link">
-            <p>Don't have an account? <a href="register.php">Register now</a></p>
+            <p><?php echo __('no_account'); ?> <a href="register.php"><?php echo __('register_now'); ?></a></p>
         </div>
     </div>
 </body>
