@@ -1,13 +1,16 @@
 <?php
 
+session_start();
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/course_functions.php';
-require_once __DIR__ . '/../includes/header.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: /auth/login.php');
     exit;
 }
+
+require_once __DIR__ . '/../includes/header.php';
 
 $search = trim($_GET['search'] ?? '');
 $userType = $_SESSION['user_type'] ?? '';

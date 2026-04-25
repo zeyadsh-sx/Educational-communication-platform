@@ -1,9 +1,12 @@
 <?php
-header("Content-Type: application/json");
+session_start();
 
-include "../includes/auth.php";
+$_SESSION = [];
 
-logoutUser();
-
-echo json_encode(["success" => true]);
-?>
+if (session_destroy()) {
+    header('Location: /auth/login.php');
+    exit;
+} else {
+    header('Location: /index.php');
+    exit;
+}

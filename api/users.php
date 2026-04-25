@@ -36,8 +36,8 @@ switch ($method) {
             
             $hashed = password_hash($password, PASSWORD_DEFAULT);
             
-            $stmt = $conn->prepare("INSERT INTO users (username, email, password, full_name, name, user_type) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$username, $email, $hashed, $full_name, $full_name, $user_type]);
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password, full_name, user_type) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$username, $email, $hashed, $full_name, $user_type]);
             
             if ($stmt) {
                 echo json_encode(["success" => true, "message" => "User registered successfully"]);
@@ -85,8 +85,8 @@ switch ($method) {
         $full_name = $data['full_name'] ?? '';
         $username = $data['username'] ?? '';
         
-        $sql = "UPDATE users SET full_name = ?, name = ?";
-        $params = [$full_name, $full_name];
+        $sql = "UPDATE users SET full_name = ?";
+        $params = [$full_name];
         
         if ($username) {
             $sql .= ", username = ?";
