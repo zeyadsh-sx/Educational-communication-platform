@@ -1,4 +1,15 @@
 <?php
+require_once __DIR__ . '/database.php';
+
+function getDB() {
+    static $pdo = null;
+    if ($pdo === null) {
+        $database = new Database();
+        $pdo = $database->connect();
+    }
+    return $pdo;
+}
+
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }

@@ -29,3 +29,13 @@ class Database {
         return $conn ? true : false;
     }
 }
+
+// Global function to get database connection
+function getDB() {
+    static $pdo = null;
+    if ($pdo === null) {
+        $database = new Database();
+        $pdo = $database->connect();
+    }
+    return $pdo;
+}
