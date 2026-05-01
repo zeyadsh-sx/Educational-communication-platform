@@ -1,298 +1,302 @@
 <?php
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-?>
-<?php
 require_once __DIR__ . '/functions.php';
+
 $lang = $_SESSION['lang'] ?? 'ar';
 $dir = $lang === 'ar' ? 'rtl' : 'ltr';
+$theme = $_COOKIE['theme'] ?? 'light';
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>">
+<html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>" data-theme="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle ?? 'Educational communication platform'; ?></title>
+    <title><?php echo $pageTitle ?? 'Educational Platform'; ?></title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background-attachment: fixed;
-            background-size: cover;
-            color: #2c3e50;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        .navbar {
-            background: linear-gradient(135deg, rgba(44, 62, 80, 0.95) 0%, rgba(26, 37, 47, 0.95) 100%);
-            color: white;
-            padding: 18px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
+        .nav-wrapper {
             position: sticky;
             top: 0;
             z-index: 1000;
-            animation: slideDown 0.6s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+            padding: 1rem 0;
+            transition: var(--transition);
         }
         
-        .navbar-brand {
-            font-size: 22px;
-            font-weight: bold;
-            color: white;
+        .nav-wrapper.scrolled {
+            padding: 0.5rem 0;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius-lg);
+            margin: 0 auto;
+            max-width: 1400px;
+            width: calc(100% - 2rem);
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
             text-decoration: none;
+            color: var(--primary);
             display: flex;
             align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
+            gap: 0.75rem;
         }
 
-        .navbar-brand:hover {
-            transform: scale(1.05);
-            text-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-        }
-
-        .navbar-brand i {
-            animation: bounce 2s infinite;
-        }
-        
-        .navbar-menu {
+        .nav-links {
             display: flex;
-            gap: 25px;
+            gap: 1.5rem;
+            list-style: none;
             align-items: center;
         }
-        
-        .navbar-menu a {
-            color: white;
+
+        .nav-link {
             text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
         }
 
-        .navbar-menu a::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.4s, height 0.4s;
+        .nav-link:hover {
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
         }
 
-        .navbar-menu a:hover::before {
-            width: 200px;
-            height: 200px;
-        }
-        
-        .navbar-menu a:hover {
-            background: rgba(255,255,255,0.15);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .navbar-menu a:active {
-            animation: pop 0.3s ease;
-        }
-        
-        .navbar-user {
+        .nav-actions {
             display: flex;
             align-items: center;
-            gap: 20px;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 15px;
-            border-radius: 25px;
-            background: rgba(255,255,255,0.1);
-            transition: all 0.3s;
+            gap: 1rem;
         }
 
-        .user-info:hover {
-            background: rgba(255,255,255,0.15);
-            transform: scale(1.05);
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.25rem;
+            cursor: pointer;
+            width: 2.5rem;
+            height: 2.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .action-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            background: rgba(99, 102, 241, 0.05);
+            transition: var(--transition);
+        }
+
+        .user-trigger:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .user-avatar-sm {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 50%;
+            background: var(--primary);
             color: white;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
         }
 
-        .user-avatar:hover {
-            transform: rotate(360deg);
-        }
-        
-        .user-name {
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .user-type {
-            font-size: 11px;
-            opacity: 0.8;
-        }
-        
-        .btn-logout {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            padding: 10px 20px;
-            border-radius: 25px;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-        }
-
-        .btn-logout:hover {
-            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
-        }
-
-        .btn-logout:active {
-            animation: pop 0.3s ease;
-        }
-        
-        @media (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                gap: 20px;
-                padding: 15px 20px;
-            }
-            
-            .navbar-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 15px;
-            }
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-5px);
-            }
-            60% {
-                transform: translateY(-3px);
-            }
-        }
-
-        @keyframes pop {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(0.95);
-            }
-            100% {
-                transform: scale(1);
-            }
+        @media (max-width: 992px) {
+            .nav-links { display: none; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <a href="/index.php" class="navbar-brand">
-            <i class="fas fa-graduation-cap"></i> <?php echo __('hero_title'); ?>
-        </a>
-        
-        <div class="navbar-menu">
-            <a href="/index.php">
-                <i class="fas fa-home"></i> <?php echo __('home'); ?>
-            </a>
-            <a href="/courses/list.php">
-                <i class="fas fa-book"></i> <?php echo __('courses'); ?>
-            </a>
-            <a href="/pages/about.php">
-                <i class="fas fa-info-circle"></i> <?php echo __('about'); ?>
+    <div class="nav-wrapper" id="navWrapper">
+        <nav class="navbar glass">
+            <a href="/index.php" class="nav-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>EduFlow</span>
             </a>
             
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <?php if ($_SESSION['user_type'] === 'professor'): ?>
-                    <a href="/admin/dashboard.php">
-                        <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
-                    </a>
-                    <a href="/courses/create.php">
-                        <i class="fas fa-plus"></i> إنشاء كورس
-                    </a>
-                <?php else: ?>
-                    <a href="/student/dashboard.php">
-                        <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
-                    </a>
-                    <a href="/questions/ask.php">
-                        <i class="fas fa-question"></i> سؤال جديد
-                    </a>
+            <ul class="nav-links">
+                <li><a href="/index.php" class="nav-link"><?php echo __('home'); ?></a></li>
+                <li><a href="/courses/list.php" class="nav-link"><?php echo __('courses'); ?></a></li>
+                <li><a href="/pages/about.php" class="nav-link"><?php echo __('about'); ?></a></li>
+                <?php if (isLoggedIn()): ?>
+                    <?php if (isProfessor()): ?>
+                        <li><a href="/admin/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
+                    <?php else: ?>
+                        <li><a href="/student/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
+                    <?php endif; ?>
                 <?php endif; ?>
-            <?php endif; ?>
-        </div>
-        
-        <div class="navbar-user">
-            <?php
-            // Logic for switching language
-            $switch_lang = $lang === 'ar' ? 'en' : 'ar';
-            ?>
-            <a href="?lang=<?php echo $switch_lang; ?>" style="color: white; margin-right: 15px; text-decoration: none;">
-                <i class="fas fa-globe"></i> <?php echo __('switch_lang'); ?>
-            </a>
-
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <?php echo mb_substr($_SESSION['full_name'] ?? 'M', 0, 1); ?>
+            </ul>
+            
+            <div class="nav-search" style="position: relative; margin: 0 1rem;">
+                <div style="position: relative;">
+                    <i class="fas fa-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    <input type="text" id="globalSearch" placeholder="<?php echo __('search'); ?>..." class="form-control" style="padding-right: 2.5rem; width: 250px; border-radius: var(--radius-full);">
+                </div>
+                <div id="searchResults" class="glass" style="display: none; position: absolute; top: 100%; right: 0; width: 300px; margin-top: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow); max-height: 400px; overflow-y: auto; z-index: 1000;">
+                </div>
+            </div>
+            
+            <div class="nav-actions">
+                <!-- Theme Toggle -->
+                <button class="action-btn" id="themeToggle" title="Toggle Theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+                
+                <!-- Language Switch -->
+                <a href="?lang=<?php echo $lang === 'ar' ? 'en' : 'ar'; ?>" class="action-btn" title="Switch Language">
+                    <i class="fas fa-globe"></i>
+                </a>
+                
+                <?php if (isLoggedIn()): ?>
+                    <!-- Notifications -->
+                    <div class="user-dropdown">
+                        <button class="action-btn" id="notifTrigger">
+                            <i class="fas fa-bell"></i>
+                            <?php 
+                            $notifCount = getPendingQuestionsCount(getCurrentUserId(), getCurrentUserType());
+                            if ($notifCount > 0): ?>
+                                <span class="notification-badge"><?php echo $notifCount; ?></span>
+                            <?php endif; ?>
+                        </button>
                     </div>
-                    <div>
-                        <div class="user-name"><?php echo htmlspecialchars($_SESSION['full_name'] ?? 'User'); ?></div>
-                        <div class="user-type">
-                            <?php echo $_SESSION['user_type'] === 'professor' ? 'Professor' : 'Student'; ?>
+                    
+                    <!-- User Menu -->
+                    <div class="user-dropdown">
+                        <div class="user-trigger" onclick="location.href='/auth/profile.php'">
+                            <div class="user-avatar-sm">
+                                <?php echo mb_substr($_SESSION['full_name'] ?? 'U', 0, 1); ?>
+                            </div>
+                            <span class="user-name-text" style="font-weight: 600; font-size: 0.9rem; margin-right: 5px;">
+                                <?php echo explode(' ', $_SESSION['full_name'] ?? 'User')[0]; ?>
+                            </span>
                         </div>
                     </div>
-                </div>
-                <a href="/auth/logout.php" class="btn-logout">
-                    <i class="fas fa-sign-out-alt"></i> <?php echo __('logout'); ?>
-                </a>
-            <?php else: ?>
-                <a href="/auth/login.php" style="color: white;">
-                    <i class="fas fa-sign-in-alt"></i> <?php echo __('login'); ?>
-                </a>
-            <?php endif; ?>
-        </div>
-    </nav>
+                    
+                    <a href="/auth/logout.php" class="btn btn-primary btn-sm">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                <?php else: ?>
+                    <a href="/auth/login.php" class="btn btn-outline btn-sm"><?php echo __('login'); ?></a>
+                    <a href="/auth/register.php" class="btn btn-primary btn-sm"><?php echo __('register'); ?></a>
+                <?php endif; ?>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // Theme Toggle Logic
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            html.setAttribute('data-theme', newTheme);
+            document.cookie = `theme=${newTheme};path=/;max-age=31536000`;
+            
+            themeToggle.querySelector('i').className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        });
+
+        // Initialize icon
+        if (html.getAttribute('data-theme') === 'dark') {
+            themeToggle.querySelector('i').className = 'fas fa-sun';
+        }
+
+        // Scroll Logic
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navWrapper');
+            if (window.scrollY > 20) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Global Search Logic
+        const searchInput = document.getElementById('globalSearch');
+        const searchResults = document.getElementById('searchResults');
+        let searchTimeout;
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length < 2) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    fetch(`/api/search.php?q=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success' && data.results.length > 0) {
+                                searchResults.innerHTML = data.results.map(item => `
+                                    <a href="${item.url}" style="display: block; padding: 10px 15px; border-bottom: 1px solid var(--glass-border); text-decoration: none; color: var(--text-main); transition: var(--transition);">
+                                        <div style="font-weight: 600;">
+                                            <i class="${item.type === 'course' ? 'fas fa-book' : 'fas fa-file'} " style="color: var(--primary); margin-left: 8px;"></i>
+                                            ${item.title}
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-right: 24px;">${item.subtitle}</div>
+                                    </a>
+                                `).join('');
+                                searchResults.style.display = 'block';
+                            } else {
+                                searchResults.innerHTML = '<div style="padding: 15px; text-align: center; color: var(--text-muted);">لا توجد نتائج</div>';
+                                searchResults.style.display = 'block';
+                            }
+                        });
+                }, 300);
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+    </script>
     
-    <main>
+    <main class="animate-fade">

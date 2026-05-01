@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/gamification.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isLoggedIn()) {
@@ -22,153 +23,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $question_text = trim($_POST['question_text'] ?? '');
         
         if (empty($question_text) || empty($course_id)) {
-            $message = 'Please fill in all required fields';
+            $message = 'يرجى ملء جميع الحقول المطلوبة';
             $messageType = 'error';
         } else {
-        $database = new Database();
-        $conn = $database->connect();
-        
-        $stmt = $conn->prepare("INSERT INTO questions (question_text, student_id, professor_id, course_id, status) VALUES (?, ?, ?, ?, 'pending')");
-        
-        // Get professor_id from course
-        $courseStmt = $conn->prepare("SELECT professor_id FROM courses WHERE id = ?");
-        $courseStmt->execute([$course_id]);
-        $course = $courseStmt->fetch();
-        
-        if ($course) {
-            $result = $stmt->execute([
-                $question_text,
-                getCurrentUserId(),
-                $course['professor_id'],
-                $course_id
-            ]);
+            $pdo = getDB();
             
-            if ($result) {
-                $message = 'Question sent successfully!';
-                $messageType = 'success';
+            // Get professor_id from course
+            $courseStmt = $pdo->prepare("SELECT professor_id FROM courses WHERE id = ?");
+            $courseStmt->execute([$course_id]);
+            $course = $courseStmt->fetch();
+            
+            if ($course) {
+                $stmt = $pdo->prepare("INSERT INTO questions (question_text, student_id, professor_id, course_id, status) VALUES (?, ?, ?, ?, 'pending')");
+                $result = $stmt->execute([
+                    $question_text,
+                    getCurrentUserId(),
+                    $course['professor_id'],
+                    $course_id
+                ]);
+                
+                if ($result) {
+                    // Award points to student
+                    awardPoints(getCurrentUserId(), 'ask_question');
+                    
+                    $message = 'تم إرسال السؤال بنجاح! لقد حصلت على 10 نقاط.';
+                    $messageType = 'success';
+                } else {
+                    $message = 'حدث خطأ أثناء إرسال السؤال';
+                    $messageType = 'error';
+                }
             } else {
-                $message = 'Error sending question';
+                $message = 'الكورس غير موجود';
                 $messageType = 'error';
             }
-        } else {
-            $message = 'Course not found';
-            $messageType = 'error';
         }
     }
 }
 
-$pageTitle = 'طرح سؤال';
+$pageTitle = 'طرح سؤال | EduFlow';
 ?>
 
-<div class="container">
-    <div class="ask-question">
-        <div class="ask-header">
-            <h1>طرح سؤال</h1>
-            <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
+<div class="container animate-fade">
+    <div style="max-width: 800px; margin: 2rem auto;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; margin: 0;">طرح سؤال جديد</h1>
+            <a href="/courses/view.php?id=<?php echo $courseId; ?>" style="color: var(--primary); text-decoration: none; font-weight: 600;">
                 <i class="fas fa-arrow-right"></i> العودة للكورس
             </a>
         </div>
 
         <?php if ($message): ?>
-            <div class="alert alert-<?php echo $messageType; ?>">
+            <div class="card" style="background: <?php echo $messageType === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'; ?>; border: 1px solid <?php echo $messageType === 'success' ? 'var(--success)' : 'var(--danger)'; ?>; color: <?php echo $messageType === 'success' ? 'var(--success)' : 'var(--danger)'; ?>; margin-bottom: 2rem;">
                 <?php echo htmlspecialchars($message); ?>
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="" class="question-form">
-            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-            <div class="form-group">
-                <label for="course_id">الكورس <span class="required">*</span></label>
-                <input type="number" 
-                       id="course_id" 
-                       name="course_id" 
-                       value="<?php echo htmlspecialchars($courseId); ?>"
-                       required>
-            </div>
-            
-            <div class="form-group">
-                <label for="question_text">السؤال <span class="required">*</span></label>
-                <textarea id="question_text" 
-                          name="question_text" 
-                          rows="6"
-                          required
-                          placeholder="اكتب سؤالك هنا..."><?php echo htmlspecialchars($question_text ?? ''); ?></textarea>
-            </div>
-            
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i> إرسال السؤال
-                </button>
-                <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
-            </div>
-        </form>
+        <div class="card glass">
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                
+                <div class="form-group">
+                    <label class="form-label">الكورس</label>
+                    <select name="course_id" class="form-control" required>
+                        <option value="">اختر الكورس...</option>
+                        <?php 
+                        $studentCourses = getStudentCourses(getCurrentUserId());
+                        foreach ($studentCourses as $sc): ?>
+                            <option value="<?php echo $sc['id']; ?>" <?php echo $courseId == $sc['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($sc['course_name']); ?> (<?php echo htmlspecialchars($sc['course_code']); ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="question_text">سؤالك</label>
+                    <textarea id="question_text" 
+                              name="question_text" 
+                              class="form-control" 
+                              rows="6"
+                              required
+                              placeholder="ما الذي يدور في ذهنك؟"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-paper-plane"></i> إرسال السؤال
+                    </button>
+                    <a href="/student/dashboard.php" class="btn btn-secondary">إلغاء</a>
+                </div>
+            </form>
+        </div>
+
+        <div style="margin-top: 3rem;" class="card glass">
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;"><i class="fas fa-info-circle" style="color: var(--primary); margin-left: 10px;"></i> ملاحظات هامة</h3>
+            <ul style="list-style: none; padding: 0; font-size: 0.9rem; color: var(--text-muted);">
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="margin-left: 10px;"></i> تأكد من وضوح السؤال لضمان الحصول على إجابة دقيقة.</li>
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="margin-left: 10px;"></i> سيتم إشعارك فور قيام الدكتور بالرد على سؤالك.</li>
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="margin-left: 10px;"></i> ستحصل على 10 نقاط مقابل كل سؤال تطرحه!</li>
+            </ul>
+        </div>
+
     </div>
 </div>
-
-<style>
-.ask-question {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.ask-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.ask-header h1 {
-    color: #2c3e50;
-    margin: 0;
-}
-
-.back-link {
-    color: #3498db;
-    text-decoration: none;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.question-form {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #34495e;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.required {
-    color: #e74c3c;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 30px;
-}
-</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
