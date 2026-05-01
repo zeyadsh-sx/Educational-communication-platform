@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/course_functions.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isLoggedIn() || !isProfessor()) {
-    header('Location: /auth/login.php');
+    redirect('/auth/login.php');
     exit;
 }
 
@@ -62,7 +62,7 @@ $pageTitle = 'لوحة تحكم الدكتور | EduFlow';
         <div class="card glass">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-list-check" style="margin-left: 10px; color: var(--primary);"></i> إدارة الكورسات</h2>
-                <a href="/courses/create.php" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> كورس جديد</a>
+                <a href="<?php echo getBaseUrl(); ?>/courses/create.php" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> كورس جديد</a>
             </div>
             
             <?php if (empty($professorCourses)): ?>

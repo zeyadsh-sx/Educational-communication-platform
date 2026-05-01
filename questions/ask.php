@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/gamification.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isLoggedIn()) {
-    header('Location: /auth/login.php');
+    redirect('/auth/login.php');
     exit;
 }
 
@@ -111,7 +111,7 @@ $pageTitle = 'طرح سؤال | EduFlow';
                     <button type="submit" class="btn btn-primary" style="flex: 1;">
                         <i class="fas fa-paper-plane"></i> إرسال السؤال
                     </button>
-                    <a href="/student/dashboard.php" class="btn btn-secondary">إلغاء</a>
+                    <a href="<?php echo getBaseUrl(); ?>/student/dashboard.php" class="btn btn-secondary">إلغاء</a>
                 </div>
             </form>
         </div>

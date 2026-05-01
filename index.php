@@ -24,23 +24,23 @@ try {
         
         <div class="hero-btns animate-fade" style="animation-delay: 0.2s; display: flex; gap: 1rem; justify-content: center;">
             <?php if (!isLoggedIn()): ?>
-                <a href="/auth/login.php" class="btn btn-primary btn-lg">
+                <a href="<?php echo getBaseUrl(); ?>/auth/login.php" class="btn btn-primary btn-lg">
                     <i class="fas fa-sign-in-alt"></i> <?php echo __('login'); ?>
                 </a>
-                <a href="/auth/register.php" class="btn btn-outline btn-lg">
+                <a href="<?php echo getBaseUrl(); ?>/auth/register.php" class="btn btn-outline btn-lg">
                     <i class="fas fa-user-plus"></i> <?php echo __('register'); ?>
                 </a>
             <?php else: ?>
                 <?php if (isProfessor()): ?>
-                    <a href="/admin/dashboard.php" class="btn btn-primary btn-lg">
+                    <a href="<?php echo getBaseUrl(); ?>/admin/dashboard.php" class="btn btn-primary btn-lg">
                         <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
                 <?php else: ?>
-                    <a href="/student/dashboard.php" class="btn btn-primary btn-lg">
+                    <a href="<?php echo getBaseUrl(); ?>/student/dashboard.php" class="btn btn-primary btn-lg">
                         <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
                 <?php endif; ?>
-                <a href="/courses/list.php" class="btn btn-outline btn-lg">
+                <a href="<?php echo getBaseUrl(); ?>/courses/list.php" class="btn btn-outline btn-lg">
                     <i class="fas fa-book"></i> <?php echo __('browse_courses'); ?>
                 </a>
             <?php endif; ?>
@@ -138,7 +138,7 @@ try {
                         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
                             شارك في الكورسات واطرح الأسئلة لتظهر في لوحة الشرف!
                         </p>
-                        <a href="/auth/register.php" class="btn btn-outline btn-sm" style="width: 100%;">انضم إلينا الآن</a>
+                        <a href="<?php echo getBaseUrl(); ?>/auth/register.php" class="btn btn-outline btn-sm" style="width: 100%;">انضم إلينا الآن</a>
                     </div>
                 </div>
             </div>

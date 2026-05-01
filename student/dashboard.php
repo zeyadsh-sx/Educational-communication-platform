@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/gamification.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isLoggedIn() || !isStudent()) {
-    header('Location: /auth/login.php');
+    redirect('/auth/login.php');
     exit;
 }
 
@@ -64,7 +64,7 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
         <div class="card glass">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-book" style="margin-left: 10px; color: var(--primary);"></i> كورساتي</h2>
-                <a href="/courses/list.php" class="btn btn-primary btn-sm">تصفح المزيد</a>
+                <a href="<?php echo getBaseUrl(); ?>/courses/list.php" class="btn btn-primary btn-sm">تصفح المزيد</a>
             </div>
             
             <?php if (empty($studentCourses)): ?>

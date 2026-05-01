@@ -7,6 +7,14 @@ require_once __DIR__ . '/functions.php';
 $lang = $_SESSION['lang'] ?? 'ar';
 $dir = $lang === 'ar' ? 'rtl' : 'ltr';
 $theme = $_COOKIE['theme'] ?? 'light';
+
+// Calculate base path for assets
+$docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+$appRoot = str_replace('\\', '/', dirname(__DIR__));
+$basePath = str_replace($docRoot, '', $appRoot);
+if (empty($basePath) || $basePath == '/') {
+    $basePath = '';
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>" data-theme="<?php echo $theme; ?>">
@@ -24,7 +32,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="<?php echo $basePath; ?>/css/style.css">
     
     <style>
         .nav-wrapper {
@@ -149,20 +157,20 @@ $theme = $_COOKIE['theme'] ?? 'light';
 <body>
     <div class="nav-wrapper" id="navWrapper">
         <nav class="navbar glass">
-            <a href="/index.php" class="nav-brand">
+            <a href="<?php echo $basePath; ?>/index.php" class="nav-brand">
                 <i class="fas fa-graduation-cap"></i>
                 <span>EduFlow</span>
             </a>
             
             <ul class="nav-links">
-                <li><a href="/index.php" class="nav-link"><?php echo __('home'); ?></a></li>
-                <li><a href="/courses/list.php" class="nav-link"><?php echo __('courses'); ?></a></li>
-                <li><a href="/pages/about.php" class="nav-link"><?php echo __('about'); ?></a></li>
+                <li><a href="<?php echo $basePath; ?>/index.php" class="nav-link"><?php echo __('home'); ?></a></li>
+                <li><a href="<?php echo $basePath; ?>/courses/list.php" class="nav-link"><?php echo __('courses'); ?></a></li>
+                <li><a href="<?php echo $basePath; ?>/pages/about.php" class="nav-link"><?php echo __('about'); ?></a></li>
                 <?php if (isLoggedIn()): ?>
                     <?php if (isProfessor()): ?>
-                        <li><a href="/admin/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
+                        <li><a href="<?php echo $basePath; ?>/admin/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
                     <?php else: ?>
-                        <li><a href="/student/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
+                        <li><a href="<?php echo $basePath; ?>/student/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
                     <?php endif; ?>
                 <?php endif; ?>
             </ul>
@@ -202,7 +210,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
                     
                     <!-- User Menu -->
                     <div class="user-dropdown">
-                        <div class="user-trigger" onclick="location.href='/auth/profile.php'">
+                        <div class="user-trigger" onclick="location.href='<?php echo $basePath; ?>/auth/profile.php'">
                             <div class="user-avatar-sm">
                                 <?php echo mb_substr($_SESSION['full_name'] ?? 'U', 0, 1); ?>
                             </div>
@@ -212,12 +220,12 @@ $theme = $_COOKIE['theme'] ?? 'light';
                         </div>
                     </div>
                     
-                    <a href="/auth/logout.php" class="btn btn-primary btn-sm">
+                    <a href="<?php echo $basePath; ?>/auth/logout.php" class="btn btn-primary btn-sm">
                         <i class="fas fa-sign-out-alt"></i>
                     </a>
                 <?php else: ?>
-                    <a href="/auth/login.php" class="btn btn-outline btn-sm"><?php echo __('login'); ?></a>
-                    <a href="/auth/register.php" class="btn btn-primary btn-sm"><?php echo __('register'); ?></a>
+                    <a href="<?php echo $basePath; ?>/auth/login.php" class="btn btn-outline btn-sm"><?php echo __('login'); ?></a>
+                    <a href="<?php echo $basePath; ?>/auth/register.php" class="btn btn-primary btn-sm"><?php echo __('register'); ?></a>
                 <?php endif; ?>
             </div>
         </nav>
@@ -269,7 +277,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
                 }
                 
                 searchTimeout = setTimeout(() => {
-                    fetch(`/api/search.php?q=${encodeURIComponent(query)}`)
+                    fetch(`<?php echo $basePath; ?>/api/search.php?q=${encodeURIComponent(query)}`)
                         .then(res => res.json())
                         .then(data => {
                             if (data.status === 'success' && data.results.length > 0) {

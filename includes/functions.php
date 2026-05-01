@@ -26,7 +26,23 @@ function isStudent() {
     return getCurrentUserType() === 'student';
 }
 
+function getBaseUrl() {
+    static $basePath = null;
+    if ($basePath === null) {
+        $docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+        $appRoot = str_replace('\\', '/', dirname(__DIR__));
+        $basePath = str_replace($docRoot, '', $appRoot);
+        if (empty($basePath) || $basePath == '/') {
+            $basePath = '';
+        }
+    }
+    return $basePath;
+}
+
 function redirect($url) {
+    if (strpos($url, '/') === 0) {
+        $url = getBaseUrl() . $url;
+    }
     header("Location: $url");
     exit;
 }

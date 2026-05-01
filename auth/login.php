@@ -22,9 +22,9 @@ try {
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['user_type'] === 'professor') {
-        header('Location: /admin/dashboard.php');
+        redirect('/admin/dashboard.php');
     } else {
-        header('Location: /student/dashboard.php');
+        redirect('/student/dashboard.php');
     }
     exit;
 }
@@ -51,9 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_type'] = $user['user_type'];
 
                 if ($user['user_type'] === 'professor') {
-                    header('Location: /admin/dashboard.php');
+                    redirect('/admin/dashboard.php');
                 } else {
-                    header('Location: /student/dashboard.php');
+                    redirect('/student/dashboard.php');
                 }
                 exit;
             } else {

@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/course_functions.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
-    header('Location: /auth/login.php');
+    redirect('/auth/login.php');
     exit;
 }
 

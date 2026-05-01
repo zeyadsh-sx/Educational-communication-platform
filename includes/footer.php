@@ -5,7 +5,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 4rem; margin-bottom: 4rem;">
                 
                 <div>
-                    <a href="/index.php" class="nav-brand" style="margin-bottom: 1.5rem; display: inline-flex;">
+                    <a href="<?php echo getBaseUrl(); ?>/index.php" class="nav-brand" style="margin-bottom: 1.5rem; display: inline-flex;">
                         <i class="fas fa-graduation-cap"></i>
                         <span>EduFlow</span>
                     </a>
@@ -22,10 +22,10 @@
                 <div>
                     <h4 style="margin-bottom: 1.5rem; font-size: 1.1rem;">روابط سريعة</h4>
                     <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem;">
-                        <li><a href="/index.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">الرئيسية</a></li>
-                        <li><a href="/courses/list.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">الكورسات المتاحة</a></li>
-                        <li><a href="/pages/about.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">حول المنصة</a></li>
-                        <li><a href="/auth/register.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">إنشاء حساب جديد</a></li>
+                        <li><a href="<?php echo getBaseUrl(); ?>/index.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">الرئيسية</a></li>
+                        <li><a href="<?php echo getBaseUrl(); ?>/courses/list.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">الكورسات المتاحة</a></li>
+                        <li><a href="<?php echo getBaseUrl(); ?>/pages/about.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">حول المنصة</a></li>
+                        <li><a href="<?php echo getBaseUrl(); ?>/auth/register.php" style="text-decoration: none; color: var(--text-muted); transition: var(--transition);">إنشاء حساب جديد</a></li>
                     </ul>
                 </div>
                 
@@ -55,6 +55,6 @@
         </div>
     </footer>
     
-    <script src="/js/main.js"></script>
+    <script src="<?php echo getBaseUrl(); ?>/js/main.js"></script>
 </body>
 </html>

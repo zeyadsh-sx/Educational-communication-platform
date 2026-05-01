@@ -6,7 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/course_functions.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /auth/login.php');
+    redirect('/auth/login.php');
     exit;
 }
 

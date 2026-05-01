@@ -14,7 +14,7 @@ $database = new Database();
 $pdo = $database->connect();
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: /index.php');
+    redirect('/index.php');
     exit;
 }
 
