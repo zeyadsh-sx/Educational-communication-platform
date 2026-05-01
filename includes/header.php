@@ -3,20 +3,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/functions.php';
-
+$basePath = getBaseUrl();
 $lang = $_SESSION['lang'] ?? 'ar';
 $dir = $lang === 'ar' ? 'rtl' : 'ltr';
 $theme = $_COOKIE['theme'] ?? 'light';
-
-// Calculate base path for assets
-$docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
-$appRoot = str_replace('\\', '/', dirname(__DIR__));
-$basePath = str_replace($docRoot, '', $appRoot);
-if (empty($basePath) || $basePath == '/') {
-    $basePath = '';
-}
 ?>
-<!DOCTYPE html>
+
+
 <html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>" data-theme="<?php echo $theme; ?>">
 <head>
     <meta charset="UTF-8">

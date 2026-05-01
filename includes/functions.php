@@ -1,4 +1,6 @@
 <?php
+ob_start();
+
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -40,6 +42,11 @@ function getBaseUrl() {
 }
 
 function redirect($url) {
+    // Ensure no output has been sent before sending header
+    if (ob_get_length()) {
+        // Clean any existing output buffers
+        ob_end_clean();
+    }
     if (strpos($url, '/') === 0) {
         $url = getBaseUrl() . $url;
     }
