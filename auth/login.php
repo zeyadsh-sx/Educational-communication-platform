@@ -1,37 +1,44 @@
 <?php
+// Error handling
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-session_start();
-require_once '../config/database.php';
-require_once '../includes/functions.php';
+try {
+    session_start();
+    require_once '../config/database.php';
+    require_once '../includes/functions.php';
 
-$lang = $_SESSION['lang'] ?? 'ar';
-$dir = $lang === 'ar' ? 'rtl' : 'ltr';
+    $lang = $_SESSION['lang'] ?? 'ar';
+    $dir = $lang === 'ar' ? 'rtl' : 'ltr';
 
-$error = '';
-$success = '';
+    $error = '';
+    $success = '';
 
-$database = new Database();
-$pdo = $database->connect();
+    $database = new Database();
+    $pdo = $database->connect();
+} catch (Exception $e) {
+    die("<h1>Error Loading Login Page</h1><p>Error: " . $e->getMessage() . "</p><p>File: " . $e->getFile() . ":" . $e->getLine() . "</p>");
+}
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['user_type'] === 'professor') {
-        header('Location: /courses/manage.php');
+        header('Location: /admin/dashboard.php');
     } else {
-        header('Location: /courses/list.php');
+        header('Location: /student/dashboard.php');
     }
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $error = 'Invalid security token. Please refresh the page and try again.';
-    } else {
+            $error = 'Invalid security token. Please refresh the page and try again.';
+        } else {
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
         
         if (empty($email) || empty($password)) {
-        $error = 'الرجاء إدخال البريد الإلكتروني وكلمة المرور';
-    } else {
+            $error = 'الرجاء إدخال البريد الإلكتروني وكلمة المرور';
+        } else {
         try {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
@@ -44,9 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_type'] = $user['user_type'];
 
                 if ($user['user_type'] === 'professor') {
-                    header('Location: /courses/manage.php');
+                    header('Location: /admin/dashboard.php');
                 } else {
-                    header('Location: /courses/list.php');
+                    header('Location: /student/dashboard.php');
                 }
                 exit;
             } else {
@@ -55,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (PDOException $e) {
             $error = 'An error occurred while connecting to the database';
         }
+    }
     }
 }
 ?>

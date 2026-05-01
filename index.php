@@ -1,10 +1,18 @@
 <?php
-session_start();
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/functions.php';
-require_once __DIR__ . '/includes/header.php';
+// Error handling
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$pageTitle = 'الرئيسية';
+try {
+    session_start();
+    require_once __DIR__ . '/config/database.php';
+    require_once __DIR__ . '/includes/functions.php';
+    require_once __DIR__ . '/includes/header.php';
+
+    $pageTitle = 'الرئيسية';
+} catch (Exception $e) {
+    die("<h1>Error Loading Application</h1><p>Error: " . $e->getMessage() . "</p><p>File: " . $e->getFile() . ":" . $e->getLine() . "</p>");
+}
 ?>
 
 <div class="hero-section">

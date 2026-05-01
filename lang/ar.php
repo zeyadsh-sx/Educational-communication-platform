@@ -60,5 +60,20 @@ return [
     'password_confirm_label' => 'تأكيد كلمة المرور *',
     'password_confirm_placeholder' => 'أعد إدخال كلمة المرور',
     'have_account' => 'لديك حساب بالفعل؟',
+    
+    // Additional translations
+    'create_course' => 'إنشاء كورس',
+    'ask_question' => 'طرح سؤال',
+    'my_courses' => 'كورساتي',
+    'browse_courses' => 'تصفح الكورسات',
+    'course_materials' => 'المواد الدراسية',
+    'announcements' => 'الإعلانات',
+    'appointments' => 'المواعيد',
+    'questions' => 'الأسئلة',
+    'students' => 'الطلاب',
+    'settings' => 'الإعدادات',
+    'profile' => 'الملف الشخصي',
+    'help' => 'المساعدة',
+    'contact' => 'اتصل بنا',
 ];
 ?>

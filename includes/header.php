@@ -234,8 +234,14 @@ $dir = $lang === 'ar' ? 'rtl' : 'ltr';
         </a>
         
         <div class="navbar-menu">
+            <a href="/index.php">
+                <i class="fas fa-home"></i> <?php echo __('home'); ?>
+            </a>
             <a href="/courses/list.php">
                 <i class="fas fa-book"></i> <?php echo __('courses'); ?>
+            </a>
+            <a href="/pages/about.php">
+                <i class="fas fa-info-circle"></i> <?php echo __('about'); ?>
             </a>
             
             <?php if (isset($_SESSION['user_id'])): ?>
@@ -243,9 +249,15 @@ $dir = $lang === 'ar' ? 'rtl' : 'ltr';
                     <a href="/admin/dashboard.php">
                         <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
                     </a>
+                    <a href="/courses/create.php">
+                        <i class="fas fa-plus"></i> إنشاء كورس
+                    </a>
                 <?php else: ?>
                     <a href="/student/dashboard.php">
                         <i class="fas fa-tachometer-alt"></i> <?php echo __('dashboard'); ?>
+                    </a>
+                    <a href="/questions/ask.php">
+                        <i class="fas fa-question"></i> سؤال جديد
                     </a>
                 <?php endif; ?>
             <?php endif; ?>

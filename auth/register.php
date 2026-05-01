@@ -21,38 +21,40 @@ if (isset($_SESSION['user_id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $error = 'Invalid security token. Please refresh the page and try again.';
-    } else {
-        $username = $_POST['username'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $password = $_POST['password'] ?? '';
-        $confirm_password = $_POST['confirm_password'] ?? '';
-        $full_name = $_POST['full_name'] ?? '';
-        $user_type = $_POST['user_type'] ?? 'student';
-        
-        if (empty($username) || empty($email) || empty($password) || empty($full_name)) {
-        $error = 'Please fill in all required fields.';
-    } elseif ($password !== $confirm_password) {
-        $error = 'Passwords do not match.';
-    } elseif (strlen($password) < 6) {
-        $error = 'Password must be at least 6 characters long.';
-    } else {
-        try {
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
-            $stmt->execute([$email, $username]);
+            $error = 'Invalid security token. Please refresh the page and try again.';
+        } else {
+            $username = $_POST['username'] ?? '';
+            $email = $_POST['email'] ?? '';
+            $password = $_POST['password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+            $full_name = $_POST['full_name'] ?? '';
+            $user_type = $_POST['user_type'] ?? 'student';
             
-            if ($stmt->fetch()) {
-                $error = 'Email or username is already registered.';
+            if (empty($username) || empty($email) || empty($password) || empty($full_name)) {
+                $error = 'Please fill in all required fields.';
+            } elseif ($password !== $confirm_password) {
+                $error = 'Passwords do not match.';
+            } elseif (strlen($password) < 6) {
+                $error = 'Password must be at least 6 characters long.';
             } else {
-                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                
-                $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, user_type) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$username, $email, $hashed_password, $full_name, $user_type]);
-                
-                $success = 'Registration successful! Please login.';
+                try {
+                    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
+                    $stmt->execute([$email, $username]);
+                    
+                    if ($stmt->fetch()) {
+                        $error = 'Email or username is already registered.';
+                    } else {
+                        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                        
+                        $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, user_type) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->execute([$username, $email, $hashed_password, $full_name, $user_type]);
+                        
+                        $success = 'Registration successful! Please login.';
+                    }
+                } catch (PDOException $e) {
+                    $error = 'An error occurred while connecting to the database.';
+                }
             }
-        } catch (PDOException $e) {
-            $error = 'An error occurred while connecting to the database.';
         }
     }
 }
