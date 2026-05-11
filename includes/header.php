@@ -11,22 +11,23 @@ $theme = $_COOKIE['theme'] ?? 'light';
 
 
 <html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>" data-theme="<?php echo $theme; ?>">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle ?? 'Educational Platform'; ?></title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?php echo $basePath; ?>/css/style.css">
-    
+
     <style>
         .nav-wrapper {
             position: sticky;
@@ -35,7 +36,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
             padding: 1rem 0;
             transition: var(--transition);
         }
-        
+
         .nav-wrapper.scrolled {
             padding: 0.5rem 0;
         }
@@ -142,11 +143,107 @@ $theme = $_COOKIE['theme'] ?? 'light';
             font-size: 0.9rem;
         }
 
+        /* Notification Dropdown */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 350px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dropdown-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .view-all-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+
+        .dropdown-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .dropdown-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item p {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .dropdown-item small {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .no-notifications {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .no-notifications i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
         @media (max-width: 992px) {
-            .nav-links { display: none; }
+            .nav-links {
+                display: none;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="nav-wrapper" id="navWrapper">
         <nav class="navbar glass">
@@ -154,7 +251,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
                 <i class="fas fa-graduation-cap"></i>
                 <span>EduFlow</span>
             </a>
-            
+
             <ul class="nav-links">
                 <li><a href="<?php echo $basePath; ?>/index.php" class="nav-link"><?php echo __('home'); ?></a></li>
                 <li><a href="<?php echo $basePath; ?>/courses/list.php" class="nav-link"><?php echo __('courses'); ?></a></li>
@@ -167,7 +264,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
                     <?php endif; ?>
                 <?php endif; ?>
             </ul>
-            
+
             <div class="nav-search" style="position: relative; margin: 0 1rem;">
                 <div style="position: relative;">
                     <i class="fas fa-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
@@ -176,31 +273,58 @@ $theme = $_COOKIE['theme'] ?? 'light';
                 <div id="searchResults" class="glass" style="display: none; position: absolute; top: 100%; right: 0; width: 300px; margin-top: 0.5rem; border-radius: var(--radius-md); box-shadow: var(--card-shadow); max-height: 400px; overflow-y: auto; z-index: 1000;">
                 </div>
             </div>
-            
+
             <div class="nav-actions">
                 <!-- Theme Toggle -->
                 <button class="action-btn" id="themeToggle" title="Toggle Theme">
                     <i class="fas fa-moon"></i>
                 </button>
-                
+
                 <!-- Language Switch -->
                 <a href="?lang=<?php echo $lang === 'ar' ? 'en' : 'ar'; ?>" class="action-btn" title="Switch Language">
                     <i class="fas fa-globe"></i>
                 </a>
-                
+
                 <?php if (isLoggedIn()): ?>
                     <!-- Notifications -->
                     <div class="user-dropdown">
                         <button class="action-btn" id="notifTrigger">
                             <i class="fas fa-bell"></i>
-                            <?php 
-                            $notifCount = getPendingQuestionsCount(getCurrentUserId(), getCurrentUserType());
+                            <?php
+                            $notifCount = getUnreadNotificationsCount(getCurrentUserId());
                             if ($notifCount > 0): ?>
                                 <span class="notification-badge"><?php echo $notifCount; ?></span>
                             <?php endif; ?>
                         </button>
+                        <div class="dropdown-menu" id="notifDropdown">
+                            <div class="dropdown-header">
+                                <h4>الإشعارات</h4>
+                                <a href="<?php echo $basePath; ?>/notifications/view.php" class="view-all-link">عرض الكل</a>
+                            </div>
+                            <div class="dropdown-content" id="notifContent">
+                                <?php
+                                $pdo = getDB();
+                                $notifStmt = $pdo->prepare("SELECT message, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+                                $notifStmt->execute([getCurrentUserId()]);
+                                $recentNotifs = $notifStmt->fetchAll();
+
+                                if (empty($recentNotifs)): ?>
+                                    <div class="no-notifications">
+                                        <i class="fas fa-bell-slash"></i>
+                                        <p>لا توجد إشعارات جديدة</p>
+                                    </div>
+                                <?php else: ?>
+                                    <?php foreach ($recentNotifs as $notif): ?>
+                                        <div class="dropdown-item">
+                                            <p><?php echo htmlspecialchars($notif['message']); ?></p>
+                                            <small><?php echo date('d/m H:i', strtotime($notif['created_at'])); ?></small>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
-                    
+
                     <!-- User Menu -->
                     <div class="user-dropdown">
                         <div class="user-trigger" onclick="location.href='<?php echo $basePath; ?>/auth/profile.php'">
@@ -212,7 +336,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
                             </span>
                         </div>
                     </div>
-                    
+
                     <a href="<?php echo $basePath; ?>/auth/logout.php" class="btn btn-primary btn-sm">
                         <i class="fas fa-sign-out-alt"></i>
                     </a>
@@ -228,14 +352,14 @@ $theme = $_COOKIE['theme'] ?? 'light';
         // Theme Toggle Logic
         const themeToggle = document.getElementById('themeToggle');
         const html = document.documentElement;
-        
+
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
+
             html.setAttribute('data-theme', newTheme);
             document.cookie = `theme=${newTheme};path=/;max-age=31536000`;
-            
+
             themeToggle.querySelector('i').className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
         });
 
@@ -263,12 +387,12 @@ $theme = $_COOKIE['theme'] ?? 'light';
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(searchTimeout);
                 const query = e.target.value.trim();
-                
+
                 if (query.length < 2) {
                     searchResults.style.display = 'none';
                     return;
                 }
-                
+
                 searchTimeout = setTimeout(() => {
                     fetch(`<?php echo $basePath; ?>/api/search.php?q=${encodeURIComponent(query)}`)
                         .then(res => res.json())
@@ -291,13 +415,30 @@ $theme = $_COOKIE['theme'] ?? 'light';
                         });
                 }, 300);
             });
-            
+
             document.addEventListener('click', (e) => {
                 if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                     searchResults.style.display = 'none';
                 }
             });
         }
+
+        // Notification Dropdown Logic
+        const notifTrigger = document.getElementById('notifTrigger');
+        const notifDropdown = document.getElementById('notifDropdown');
+
+        if (notifTrigger && notifDropdown) {
+            notifTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notifDropdown.classList.toggle('show');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!notifTrigger.contains(e.target) && !notifDropdown.contains(e.target)) {
+                    notifDropdown.classList.remove('show');
+                }
+            });
+        }
     </script>
-    
+
     <main class="animate-fade">

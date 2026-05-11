@@ -1,13 +1,51 @@
 <?php
 include "../../config/database.php";
+include "../../includes/auth.php";
+
+requireLogin();
 
 $database = new Database();
 $conn = $database->connect();
 
-$course_id = $_GET['course_id'];
+$course_id = $_GET['course_id'] ?? null;
 
-$stmt = $conn->prepare("SELECT * FROM materials WHERE course_id=?");
+if (!$course_id) {
+  http_response_code(400);
+  echo json_encode(["success" => false, "message" => "Course ID is required"]);
+  exit;
+}
+
+$user_id = $_SESSION['user']['id'];
+$user_type = $_SESSION['user']['user_type'];
+
+// Check if user has access to this course
+if ($user_type === 'student') {
+  $accessStmt = $conn->prepare("SELECT id FROM course_enrollments WHERE course_id = ? AND student_id = ? AND status = 'active'");
+} else {
+  $accessStmt = $conn->prepare("SELECT id FROM courses WHERE id = ? AND professor_id = ?");
+}
+$accessStmt->execute([$course_id, $user_id]);
+$access = $accessStmt->fetch();
+
+if (!$access) {
+  http_response_code(403);
+  echo json_encode(["success" => false, "message" => "Access denied"]);
+  exit;
+}
+
+$stmt = $conn->prepare("
+    SELECT m.*, u.full_name as uploaded_by_name, c.course_name
+    FROM materials m
+    LEFT JOIN users u ON m.uploaded_by = u.id
+    JOIN courses c ON m.course_id = c.id
+    WHERE m.course_id = ?
+    ORDER BY m.uploaded_at DESC
+");
 $stmt->execute([$course_id]);
 
-echo json_encode($stmt->fetchAll());
-?>
+$materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+echo json_encode([
+  "success" => true,
+  "materials" => $materials
+]);

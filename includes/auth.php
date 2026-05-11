@@ -1,18 +1,21 @@
 <?php
 
-function isLoggedIn() {
+function isLoggedIn()
+{
     return isset($_SESSION['user_id']);
 }
 
-function requireLogin() {
+function requireLogin()
+{
     if (!isLoggedIn()) {
         http_response_code(401);
-        echo json_encode(["error" => "Unauthorized"]);
+        echo json_encode(["success" => false, "message" => "Unauthorized"]);
         exit;
     }
 }
 
-function currentUser() {
+function currentUser()
+{
     if (!isset($_SESSION['user_id'])) {
         return null;
     }
@@ -25,7 +28,8 @@ function currentUser() {
     ];
 }
 
-function loginUser($user) {
+function loginUser($user)
+{
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['username'] = $user['username'];
     $_SESSION['full_name'] = $user['full_name'];
@@ -33,7 +37,7 @@ function loginUser($user) {
     $_SESSION['user_type'] = $user['user_type'];
 }
 
-function logoutUser() {
+function logoutUser()
+{
     session_destroy();
 }
-?>

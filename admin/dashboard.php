@@ -44,7 +44,7 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"><i class="fas fa-users"></i></div>
             <div class="stat-value">
-                <?php 
+                <?php
                 $totalStudents = 0;
                 foreach ($professorCourses as $course) {
                     $totalStudents += getCourseStudentCount($course['id']);
@@ -67,14 +67,14 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
     </div>
 
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
-        
+
         <!-- Courses Management -->
         <div class="card glass">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-list-check" style="margin-left: 10px; color: var(--primary);"></i> إدارة الكورسات</h2>
                 <a href="<?php echo getBaseUrl(); ?>/courses/create.php" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> كورس جديد</a>
             </div>
-            
+
             <?php if (empty($professorCourses)): ?>
                 <div style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
                     <p>لم تقم بإنشاء أي كورس بعد.</p>
@@ -100,7 +100,7 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
 
         <!-- Recent Activity Side Panel -->
         <div style="display: flex; flex-direction: column; gap: 2rem;">
-            
+
             <!-- Quick Questions -->
             <div class="card glass">
                 <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem;"><i class="fas fa-comments" style="margin-left: 10px; color: var(--danger);"></i> أسئلة حديثة</h2>
@@ -124,37 +124,81 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
                 <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem;"><i class="fas fa-chart-pie" style="margin-left: 10px; color: var(--success);"></i> إحصائيات سريعة</h2>
                 <canvas id="questionsChart" style="max-height: 200px;"></canvas>
             </div>
-            
+
         </div>
+    </div>
+
+    <!-- Appointments Management -->
+    <div class="card glass" style="margin-top: 2rem;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;"><i class="fas fa-calendar-alt" style="margin-left: 10px; color: var(--warning);"></i> المواعيد القادمة</h2>
+        <?php if (empty($upcomingAppointments)): ?>
+            <div style="text-align: center; padding: 2.5rem 0; color: var(--text-muted);">
+                <i class="fas fa-calendar-times" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.35;"></i>
+                <p>لا توجد مواعيد جديدة في الوقت الحالي.</p>
+            </div>
+        <?php else: ?>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                <?php foreach ($upcomingAppointments as $appointment): ?>
+                    <div class="card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                            <div>
+                                <div style="font-size: 1rem; font-weight: 700;"><?php echo htmlspecialchars($appointment['other_party'] ?? 'طالب'); ?></div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);"><?php echo htmlspecialchars($appointment['status'] === 'pending' ? 'معلق' : ($appointment['status'] === 'confirmed' ? 'مؤكد' : 'ملغي')); ?></div>
+                            </div>
+                            <span class="badge <?php echo $appointment['status'] === 'confirmed' ? 'badge-success' : ($appointment['status'] === 'pending' ? 'badge-warning' : 'badge-danger'); ?>">
+                                <?php echo $appointment['status'] === 'confirmed' ? 'مؤكد' : ($appointment['status'] === 'pending' ? 'معلق' : 'ملغي'); ?>
+                            </span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                            <i class="fas fa-calendar"></i> <?php echo date('d/m/Y', strtotime($appointment['date_time'])); ?>
+                            <i class="fas fa-clock" style="margin-right: 10px;"></i> <?php echo date('H:i', strtotime($appointment['date_time'])); ?>
+                        </div>
+                        <?php if (!empty($appointment['notes'])): ?>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                <strong>ملاحظات:</strong> <?php echo htmlspecialchars(mb_substr($appointment['notes'], 0, 60)); ?><?php echo strlen($appointment['notes']) > 60 ? '...' : ''; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div style="margin-top: 1.25rem; text-align: center;">
+                <a href="<?php echo $basePath; ?>/appointments/view.php" class="btn btn-outline">عرض جميع المواعيد</a>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const analytics = <?php echo json_encode($analytics); ?>;
-    const ctx = document.getElementById('questionsChart').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['معلقة', 'مجابة'],
-            datasets: [{
-                data: [analytics.questions.pending, analytics.questions.answered],
-                backgroundColor: ['#ef4444', '#10b981'],
-                borderWidth: 0,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: getComputedStyle(document.body).getPropertyValue('--text-main') } }
+    document.addEventListener('DOMContentLoaded', function() {
+        const analytics = <?php echo json_encode($analytics); ?>;
+        const ctx = document.getElementById('questionsChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['معلقة', 'مجابة'],
+                datasets: [{
+                    data: [analytics.questions.pending, analytics.questions.answered],
+                    backgroundColor: ['#ef4444', '#10b981'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
             },
-            cutout: '70%'
-        }
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: getComputedStyle(document.body).getPropertyValue('--text-main')
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
     });
-});
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -8,27 +8,33 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../config/database.php';
 
-function isLoggedIn() {
+function isLoggedIn()
+{
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
-function getCurrentUserId() {
+function getCurrentUserId()
+{
     return $_SESSION['user_id'] ?? null;
 }
 
-function getCurrentUserType() {
+function getCurrentUserType()
+{
     return $_SESSION['user_type'] ?? null;
 }
 
-function isProfessor() {
+function isProfessor()
+{
     return getCurrentUserType() === 'professor';
 }
 
-function isStudent() {
+function isStudent()
+{
     return getCurrentUserType() === 'student';
 }
 
-function getBaseUrl() {
+function getBaseUrl()
+{
     static $basePath = null;
     if ($basePath === null) {
         $docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
@@ -41,7 +47,8 @@ function getBaseUrl() {
     return $basePath;
 }
 
-function redirect($url) {
+function redirect($url)
+{
     // Ensure no output has been sent before sending header
     if (ob_get_length()) {
         // Clean any existing output buffers
@@ -54,23 +61,28 @@ function redirect($url) {
     exit;
 }
 
-function showError($message) {
+function showError($message)
+{
     return '<div class="alert alert-error">' . htmlspecialchars($message) . '</div>';
 }
 
-function showSuccess($message) {
+function showSuccess($message)
+{
     return '<div class="alert alert-success">' . htmlspecialchars($message) . '</div>';
 }
 
-function sanitize($input) {
+function sanitize($input)
+{
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
-function formatDate($date) {
+function formatDate($date)
+{
     return date('Y-m-d H:i', strtotime($date));
 }
 
-function getPendingQuestionsCount($userId, $userType) {
+function getPendingQuestionsCount($userId, $userType)
+{
     $pdo = getDB();
     if ($userType === 'professor') {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM questions WHERE professor_id = ? AND status = 'pending'");
@@ -81,7 +93,8 @@ function getPendingQuestionsCount($userId, $userType) {
     return $stmt->fetchColumn();
 }
 
-function getUpcomingAppointmentsCount($userId, $userType) {
+function getUpcomingAppointmentsCount($userId, $userType)
+{
     $pdo = getDB();
     if ($userType === 'professor') {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments WHERE professor_id = ? AND (status = 'pending' OR date_time > NOW())");
@@ -92,13 +105,22 @@ function getUpcomingAppointmentsCount($userId, $userType) {
     return $stmt->fetchColumn();
 }
 
-function getStudentMaterialsCount($userId) {
+function getStudentMaterialsCount($userId)
+{
     $pdo = getDB();
     $stmt = $pdo->prepare("
         SELECT COUNT(*) FROM materials m 
         JOIN course_enrollments ce ON m.course_id = ce.course_id 
         WHERE ce.student_id = ? AND ce.status = 'active'
     ");
+    $stmt->execute([$userId]);
+    return $stmt->fetchColumn();
+}
+
+function getUnreadNotificationsCount($userId)
+{
+    $pdo = getDB();
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = FALSE");
     $stmt->execute([$userId]);
     return $stmt->fetchColumn();
 }
@@ -111,7 +133,8 @@ if (!isset($_SESSION['lang'])) {
     $_SESSION['lang'] = 'ar'; // Default language
 }
 
-function __($key) {
+function __($key)
+{
     global $lang_data;
     if (!isset($lang_data)) {
         $lang = $_SESSION['lang'] ?? 'ar';
@@ -125,7 +148,8 @@ function __($key) {
     return $lang_data[$key] ?? $key;
 }
 
-function getRecentQuestions($userId, $userType, $limit = 5) {
+function getRecentQuestions($userId, $userType, $limit = 5)
+{
     $pdo = getDB();
     if ($userType === 'professor') {
         $stmt = $pdo->prepare("SELECT q.*, c.course_name, u.full_name as student_name 
@@ -148,19 +172,20 @@ function getRecentQuestions($userId, $userType, $limit = 5) {
     return $stmt->fetchAll();
 }
 
-function getUpcomingAppointmentsList($userId, $userType, $limit = 5) {
+function getUpcomingAppointmentsList($userId, $userType, $limit = 5)
+{
     $pdo = getDB();
     if ($userType === 'professor') {
-        $stmt = $pdo->prepare("SELECT a.*, u.full_name as other_party 
+        $stmt = $pdo->prepare("SELECT a.*, u.full_name as student_name 
                                FROM appointments a 
                                LEFT JOIN users u ON a.student_id = u.id 
-                               WHERE a.professor_id = ? AND a.date_time >= NOW() 
+                               WHERE a.professor_id = ? AND (a.date_time >= NOW() OR a.status = 'pending') 
                                ORDER BY a.date_time ASC LIMIT ?");
     } else {
-        $stmt = $pdo->prepare("SELECT a.*, u.full_name as other_party 
+        $stmt = $pdo->prepare("SELECT a.*, u.full_name as professor_name 
                                FROM appointments a 
                                LEFT JOIN users u ON a.professor_id = u.id 
-                               WHERE a.student_id = ? AND a.date_time >= NOW() 
+                               WHERE a.student_id = ? AND (a.date_time >= NOW() OR a.status = 'pending') 
                                ORDER BY a.date_time ASC LIMIT ?");
     }
     $stmt->bindValue(1, $userId, PDO::PARAM_INT);
@@ -169,7 +194,8 @@ function getUpcomingAppointmentsList($userId, $userType, $limit = 5) {
     return $stmt->fetchAll();
 }
 
-function getRecentNotifications($userId, $limit = 5) {
+function getRecentNotifications($userId, $limit = 5)
+{
     $pdo = getDB();
     $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?");
     $stmt->bindValue(1, $userId, PDO::PARAM_INT);
@@ -179,14 +205,16 @@ function getRecentNotifications($userId, $limit = 5) {
 }
 
 // Security Functions
-function generateCSRFToken() {
+function generateCSRFToken()
+{
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
     return $_SESSION['csrf_token'];
 }
 
-function verifyCSRFToken($token) {
+function verifyCSRFToken($token)
+{
     if (empty($_SESSION['csrf_token']) || empty($token)) {
         return false;
     }
@@ -194,10 +222,11 @@ function verifyCSRFToken($token) {
 }
 
 // Analytics Functions
-function getProfessorAnalytics($userId) {
+function getProfessorAnalytics($userId)
+{
     $pdo = getDB();
     $analytics = ['courses' => [], 'students_count' => [], 'questions' => ['pending' => 0, 'answered' => 0]];
-    
+
     // Students per course
     $stmt1 = $pdo->prepare("SELECT c.course_name, COUNT(ce.student_id) as student_count 
                            FROM courses c 
@@ -209,7 +238,7 @@ function getProfessorAnalytics($userId) {
         $analytics['courses'][] = $row['course_name'];
         $analytics['students_count'][] = $row['student_count'];
     }
-    
+
     // Questions status
     $stmt2 = $pdo->prepare("SELECT status, COUNT(*) as count FROM questions WHERE professor_id = ? GROUP BY status");
     $stmt2->execute([$userId]);
@@ -217,14 +246,15 @@ function getProfessorAnalytics($userId) {
         if ($row['status'] == 'pending') $analytics['questions']['pending'] = $row['count'];
         else $analytics['questions']['answered'] += $row['count']; // Combine answered statuses
     }
-    
+
     return $analytics;
 }
 
-function getStudentAnalytics($userId) {
+function getStudentAnalytics($userId)
+{
     $pdo = getDB();
     $analytics = ['courses' => [], 'materials_count' => [], 'appointments' => ['pending' => 0, 'completed' => 0, 'cancelled' => 0]];
-    
+
     // Materials per course
     $stmt1 = $pdo->prepare("SELECT c.course_name, COUNT(m.id) as material_count 
                            FROM course_enrollments ce 
@@ -237,7 +267,7 @@ function getStudentAnalytics($userId) {
         $analytics['courses'][] = $row['course_name'];
         $analytics['materials_count'][] = $row['material_count'];
     }
-    
+
     // Appointments status
     $stmt2 = $pdo->prepare("SELECT status, COUNT(*) as count FROM appointments WHERE student_id = ? GROUP BY status");
     $stmt2->execute([$userId]);
@@ -246,6 +276,6 @@ function getStudentAnalytics($userId) {
         else if ($row['status'] == 'completed') $analytics['appointments']['completed'] = $row['count'];
         else $analytics['appointments']['cancelled'] += $row['count'];
     }
-    
+
     return $analytics;
 }

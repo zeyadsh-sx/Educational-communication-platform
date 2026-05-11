@@ -59,14 +59,14 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
-        
+
         <!-- Courses List -->
         <div class="card glass">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-book" style="margin-left: 10px; color: var(--primary);"></i> كورساتي</h2>
                 <a href="<?php echo getBaseUrl(); ?>/courses/list.php" class="btn btn-primary btn-sm">تصفح المزيد</a>
             </div>
-            
+
             <?php if (empty($studentCourses)): ?>
                 <div style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
                     <i class="fas fa-book-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
@@ -90,7 +90,7 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
         <!-- Achievements & Progress -->
         <div class="card glass">
             <h2 style="font-size: 1.5rem; margin-bottom: 2rem;"><i class="fas fa-award" style="margin-left: 10px; color: var(--accent);"></i> أوسمتي وإنجازاتي</h2>
-            
+
             <?php if (empty($achievements)): ?>
                 <div style="text-align: center; padding: 2rem 0; color: var(--text-muted);">
                     <p>ابدأ التفاعل في المنصة لتحصل على أوسمة تميز!</p>
@@ -105,7 +105,7 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-            
+
             <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
                 <h3 style="font-size: 1.1rem; margin-bottom: 1.5rem;">كيف أحصل على المزيد من النقاط؟</h3>
                 <ul style="list-style: none; padding: 0; font-size: 0.9rem; color: var(--text-muted);">
@@ -114,9 +114,49 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
                     <li style="margin-bottom: 0.75rem;"><i class="fas fa-check-circle" style="color: var(--success); margin-left: 10px;"></i> حجز موعد مكتبي (+15 نقطة)</li>
                 </ul>
             </div>
+            <!-- Appointments Section -->
+            <div class="card glass">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-calendar-check" style="margin-left: 10px; color: var(--info);"></i> مواعيدي</h2>
+                    <a href="<?php echo getBaseUrl(); ?>/appointments/book.php" class="btn btn-primary btn-sm">حجز موعد جديد</a>
+                </div>
+
+                <?php if (empty($upcomingAppointments)): ?>
+                    <div style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
+                        <i class="fas fa-calendar-plus" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>لا توجد مواعيد محجوزة حالياً.</p>
+                        <a href="<?php echo getBaseUrl(); ?>/appointments/book.php" class="btn btn-primary">احجز موعدك الأول</a>
+                    </div>
+                <?php else: ?>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <?php foreach ($upcomingAppointments as $appointment): ?>
+                            <div style="padding: 1rem; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2);">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($appointment['professor_name'] ?? 'دكتور'); ?></strong>
+                                    </div>
+                                    <span class="badge <?php echo $appointment['status'] === 'confirmed' ? 'badge-success' : 'badge-warning'; ?>">
+                                        <?php echo $appointment['status'] === 'confirmed' ? 'مؤكد' : 'معلق'; ?>
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.9rem; color: var(--text-muted);">
+                                    <i class="fas fa-calendar"></i> <?php echo date('d/m/Y', strtotime($appointment['date_time'])); ?>
+                                    <i class="fas fa-clock" style="margin-right: 10px;"></i> <?php echo date('H:i', strtotime($appointment['date_time'])); ?>
+                                </div>
+                                <?php if (!empty($appointment['notes'])): ?>
+                                    <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                        <strong>ملاحظات:</strong> <?php echo htmlspecialchars(substr($appointment['notes'], 0, 50)); ?><?php echo strlen($appointment['notes']) > 50 ? '...' : ''; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div style="margin-top: 1.5rem; text-align: center;">
+                        <a href="<?php echo getBaseUrl(); ?>/appointments/view.php" class="btn btn-outline">عرض جميع المواعيد</a>
+                    </div>
+                <?php endif; ?>
+            </div>
+
         </div>
 
-    </div>
-</div>
-
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+        <?php require_once __DIR__ . '/../includes/footer.php'; ?>

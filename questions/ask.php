@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/course_functions.php';
 require_once __DIR__ . '/../includes/gamification.php';
 require_once __DIR__ . '/../includes/header.php';
 
@@ -21,18 +22,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $course_id = $_POST['course_id'] ?? 0;
         $question_text = trim($_POST['question_text'] ?? '');
-        
+
         if (empty($question_text) || empty($course_id)) {
             $message = 'يرجى ملء جميع الحقول المطلوبة';
             $messageType = 'error';
         } else {
             $pdo = getDB();
-            
+
             // Get professor_id from course
             $courseStmt = $pdo->prepare("SELECT professor_id FROM courses WHERE id = ?");
             $courseStmt->execute([$course_id]);
             $course = $courseStmt->fetch();
-            
+
             if ($course) {
                 $stmt = $pdo->prepare("INSERT INTO questions (question_text, student_id, professor_id, course_id, status) VALUES (?, ?, ?, ?, 'pending')");
                 $result = $stmt->execute([
@@ -41,11 +42,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $course['professor_id'],
                     $course_id
                 ]);
-                
+
                 if ($result) {
                     // Award points to student
                     awardPoints(getCurrentUserId(), 'ask_question');
-                    
+
+                    // Send notification to professor
+                    $studentStmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+                    $studentStmt->execute([getCurrentUserId()]);
+                    $studentName = $studentStmt->fetchColumn();
+
+                    include_once '../includes/notification_functions.php';
+                    sendNotification($course['professor_id'], "سؤال جديد من طالب ({$studentName}) في كورسك");
+
                     $message = 'تم إرسال السؤال بنجاح! لقد حصلت على 10 نقاط.';
                     $messageType = 'success';
                 } else {
@@ -65,7 +74,7 @@ $pageTitle = 'طرح سؤال | EduFlow';
 
 <div class="container animate-fade">
     <div style="max-width: 800px; margin: 2rem auto;">
-        
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1 style="font-size: 2rem; margin: 0;">طرح سؤال جديد</h1>
             <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" style="color: var(--primary); text-decoration: none; font-weight: 600;">
@@ -82,37 +91,47 @@ $pageTitle = 'طرح سؤال | EduFlow';
         <div class="card glass">
             <form method="POST" action="">
                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                
-                <div class="form-group">
-                    <label class="form-label">الكورس</label>
-                    <select name="course_id" class="form-control" required>
-                        <option value="">اختر الكورس...</option>
-                        <?php 
-                        $studentCourses = getStudentCourses(getCurrentUserId());
-                        foreach ($studentCourses as $sc): ?>
-                            <option value="<?php echo $sc['id']; ?>" <?php echo $courseId == $sc['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($sc['course_name']); ?> (<?php echo htmlspecialchars($sc['course_code']); ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="question_text">سؤالك</label>
-                    <textarea id="question_text" 
-                              name="question_text" 
-                              class="form-control" 
-                              rows="6"
-                              required
-                              placeholder="ما الذي يدور في ذهنك؟"></textarea>
-                </div>
-                
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">
-                        <i class="fas fa-paper-plane"></i> إرسال السؤال
-                    </button>
-                    <a href="<?php echo getBaseUrl(); ?>/student/dashboard.php" class="btn btn-secondary">إلغاء</a>
-                </div>
+
+                <?php
+                $studentCourses = getStudentCourses(getCurrentUserId());
+                if (empty($studentCourses)): ?>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        يجب أن تنضم لكورس واحد على الأقل قبل طرح سؤال.
+                        <a href="<?php echo $basePath; ?>/courses/list.php">تصفح الكورسات المتاحة</a>
+                    </div>
+                <?php else: ?>
+
+                    <div class="form-group">
+                        <label class="form-label">الكورس</label>
+                        <select name="course_id" class="form-control" required>
+                            <option value="">اختر الكورس...</option>
+                            <?php foreach ($studentCourses as $sc): ?>
+                                <option value="<?php echo $sc['id']; ?>" <?php echo $courseId == $sc['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($sc['course_name']); ?> (<?php echo htmlspecialchars($sc['course_code']); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="question_text">سؤالك</label>
+                        <textarea id="question_text"
+                            name="question_text"
+                            class="form-control"
+                            rows="6"
+                            required
+                            placeholder="ما الذي يدور في ذهنك؟"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            <i class="fas fa-paper-plane"></i> إرسال السؤال
+                        </button>
+                        <a href="<?php echo getBaseUrl(); ?>/student/dashboard.php" class="btn btn-secondary">إلغاء</a>
+                    </div>
+
+                <?php endif; ?>
             </form>
         </div>
 
