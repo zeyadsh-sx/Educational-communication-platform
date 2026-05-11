@@ -1,6 +1,6 @@
 <?php
-include "../../config/database.php";
-include "../../includes/auth.php";
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 
@@ -15,6 +15,7 @@ $user_type = $_SESSION['user']['user_type'];
 
 $query = "
     SELECT a.*, 
+    
            u_student.full_name as student_name,
            u_professor.full_name as professor_name,
            c.course_name

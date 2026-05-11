@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/notification_functions.php';
+require_once __DIR__ . '/../includes/gamification.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isLoggedIn()) {
@@ -51,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $message = 'يرجى كتابة الإجابة';
       $messageType = 'error';
     } else {
-      $updateStmt = $pdo->prepare("UPDATE questions SET answer = ?, status = 'answered', answered_at = NOW() WHERE id = ?");
+      $updateStmt = $pdo->prepare("UPDATE questions SET answer_text = ?, status = 'answered', answered_at = NOW() WHERE id = ?");
       $result = $updateStmt->execute([$answer_text, $questionId]);
 
       if ($result) {
@@ -62,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         awardPoints(getCurrentUserId(), 'answer_question');
 
         $message = 'تم إرسال الإجابة بنجاح! لقد حصلت على 20 نقطة.';
+        $messageType = 'success';
+
+        $questionStmt->execute([$questionId, getCurrentUserId()]);
         $question = $questionStmt->fetch();
       } else {
         $message = 'حدث خطأ أثناء إرسال الإجابة';
@@ -114,7 +118,7 @@ $pageTitle = 'الإجابة على سؤال | EduFlow';
               class="form-control"
               rows="8"
               required
-              placeholder="اكتب إجابتك هنا..."><?php echo htmlspecialchars($question['answer'] ?? ''); ?></textarea>
+              placeholder="اكتب إجابتك هنا..."><?php echo htmlspecialchars($question['answer_text'] ?? ''); ?></textarea>
           </div>
 
           <div style="display: flex; gap: 1rem; margin-top: 2rem;">

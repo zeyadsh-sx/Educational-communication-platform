@@ -1,7 +1,7 @@
 <?php
-include "../../config/database.php";
-include "../../includes/auth.php";
-include "../../includes/gamification.php";
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/gamification.php';
 
 requireLogin();
 

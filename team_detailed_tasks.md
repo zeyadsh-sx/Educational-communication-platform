@@ -6,16 +6,13 @@
 - [x] صفحة تسجيل الدخول (Login)
 - [x] نظام الخروج (Logout)
 - [x] تحديد نوع المستخدم (دكتور/طالب)
-- [x] إنشاء API للمستخدمين
-- [x] التحقق من صحة البيانات
-- [x] نظام الجلسات الآمن
+
 
 **الملفات المطلوبة:**
 - `auth/register.php` - صفحة التسجيل (Folder: auth/)
 - `auth/login.php` - صفحة الدخول (Folder: auth/)
 - `auth/logout.php` - تسجيل الخروج (Folder: auth/)
 - `includes/auth.php` - دوال المصادقة (Folder: includes/)
-- `api/users.php` - API للمستخدمين (Folder: api/)
 
 **وظائف API:**
 - `POST /api/users/register` - تسجيل مستخدم جديد
@@ -37,7 +34,6 @@
 
 **الملفات المطلوبة:**
 - `courses/create.php` - إنشاء كورس (Folder: courses/)
-- `courses/list.php` - قائمة الكورسات (Folder: courses/)
 - `courses/join.php` - انضمام للكورس (Folder: courses/)
 - `courses/manage.php` - إدارة الكورس (Folder: courses/)
 - `courses/view.php` - عرض الكورس (Folder: courses/)
@@ -55,19 +51,15 @@
 ## سامية - رفع الملفات والإعلانات
 **المهام الرئيسية:**
 - [x] رفع المحاضرات والملفات
-- [x] عرض الملفات للطلبة
+- [x]  عرض الإعلانات
 - [x] تحميل الملفات
 - [x] إضافة الإعلانات
-- [x] إدارة حسابات الدكاترة
-- [x] تنظيم الملفات حسب الكورس
 
 **الملفات المطلوبة:**
 - `materials/upload.php` - رفع الملفات (Folder: materials/)
-- `materials/view.php` - عرض الملفات (Folder: materials/)
 - `materials/download.php` - تحميل الملفات (Folder: materials/)
 - `announcements/create.php` - إنشاء إعلان (Folder: announcements/)
 - `announcements/view.php` - عرض الإعلانات (Folder: announcements/)
-- `admin/manage_professors.php` - إدارة الدكاترة (Folder: admin/)
 
 **وظائف API:**
 - `POST /api/materials/upload` - رفع ملف
@@ -80,20 +72,16 @@
 
 ## منه - الأسئلة والمواعيد والإشعارات
 **المهام الرئيسية:**
-- [x] نظام الأسئلة والإجابات
-- [x] حجز المواعيد المكتبية
-- [x] نظام الإشعارات
-- [x] عرض المواعيد المتاحة
-- [x] تأكيد المواعيد
-- [x] إدارة الإشعارات
+- `courses/list.php` - قائمة الكورسات (Folder: courses/)
+- [x] إدارة حسابات الدكاترة
+الاسئله 
+رفع ورد 
+
+
 
 **الملفات المطلوبة:**
-- `questions/ask.php` - طرح سؤال (Folder: questions/)
-- `questions/answer.php` - الإجابة على سؤال (Folder: questions/)
-- `appointments/book.php` - حجز موعد (Folder: appointments/)
-- `appointments/view.php` - عرض المواعيد (Folder: appointments/)
-- `notifications/view.php` - عرض الإشعارات (Folder: notifications/)
-- `includes/notification_functions.php` - دوال الإشعارات (Folder: includes/)
+- `admin/manage_professors.php` - إدارة الدكاترة (Folder: admin/)
+
 
 **وظائف API:**
 - `POST /api/questions/ask` - طرح سؤال
@@ -133,29 +121,24 @@
 
 ## زياد - التصميم والتكامل
 **المهام الرئيسية:**
-- [x] تصميم الواجهة الأساسية
-- [x] تصميم متجاوب (Responsive)
-- [x] ربط جميع الأجزاء
-- [x] اختبار النظام
-- [x] إصلاح الأخطاء
-- [x] تحسين الأداء
+- [x] إنشاء API للمستخدمين
+- [x] التحقق من صحة البيانات
+- [x] نظام الجلسات الآمن
+
 
 **الملفات المطلوبة:**
-- `css/style.css` - التنسيق الأساسي (Folder: css/)
-- `css/responsive.css` - التصميم المتجاوب (Folder: css/)
-- `js/main.js` - JavaScript رئيسي (Folder: js/)
-- `includes/header.php` - الهيدر (Folder: includes/)
-- `includes/footer.php` - الفوتر (Folder: includes/)
-- `index.php` - الصفحة الرئيسية (Folder: root/)
+- `api/users.php` - API للمستخدمين (Folder: api/)
 
-**مميزات التصميم:**
-- بسيط وسهل الاستخدام
-- مناسب للطلبة
-- يعمل على الموبايل والكمبيوتر
-- ألوان مريحة للعين
-- أيقونات واضحة
 
----
+
+
+
+
+
+
+
+
+
 
 ## المهام الإضافية (إذا لزم الأمر)
 
