@@ -1,10 +1,12 @@
 <?php
-
+// Start session and include required files
 session_start();
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/course_functions.php';
 require_once __DIR__ . '/../includes/header.php';
 
+// Check if user is professor
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'professor') {
     redirect('/auth/login.php');
     exit;
@@ -13,85 +15,81 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'professor') {
 $message = '';
 $messageType = '';
 
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $message = 'Invalid security token. Please try again.';
+        $message = 'Invalid security token';
         $messageType = 'error';
     } else {
         $courseName = trim($_POST['course_name'] ?? '');
         $courseCode = trim($_POST['course_code'] ?? '');
         $description = trim($_POST['description'] ?? '');
         
+        // Validation
         if (empty($courseName) || empty($courseCode)) {
-        $message = 'Please fill in all required fields ';
-        $messageType = 'error';
-    } elseif (courseCodeExists($courseCode)) {
-        $message = 'Course code already exists';
-        $messageType = 'error';
-    } else {
-        $result = createCourse($courseName, $courseCode, $_SESSION['user_id'], $description);
-        
-        if ($result['success']) {
-            $message = 'Course created successfully!';
-            $messageType = 'success';
-
-            $courseName = '';
-            $courseCode = '';
-            $description = '';
-        } else {
-            $message = $result['message'];
+            $message = 'Please fill in all required fields';
             $messageType = 'error';
+        } elseif (courseCodeExists($courseCode)) {
+            $message = 'Course code already exists';
+            $messageType = 'error';
+        } else {
+            // Create course
+            $result = createCourse($courseName, $courseCode, $_SESSION['user_id'], $description);
+            
+            if ($result['success']) {
+                $message = 'Course created successfully!';
+                $messageType = 'success';
+                // Clear form
+                $courseName = '';
+                $courseCode = '';
+                $description = '';
+            } else {
+                $message = $result['message'];
+                $messageType = 'error';
+            }
         }
-    }
     }
 }
 ?>
 
 <div class="container">
-    <div class="course-create">
+    <div class="form-container">
         <h1>Create New Course</h1>
         
+        <!-- Show message if exists -->
         <?php if ($message): ?>
-            <div class="alert alert-<?php echo $messageType; ?>">
+            <div class="message message-<?php echo $messageType; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="" class="course-form">
+        <!-- Course creation form -->
+        <form method="POST" class="course-form">
             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-            <div class="form-group">
-                <label for="course_name">Course Name <span class="required">*</span></label>
-                <input type="text" 
-                       id="course_name" 
-                       name="course_name" 
+            
+            <div class="field">
+                <label for="course_name">Course Name *</label>
+                <input type="text" id="course_name" name="course_name" 
                        value="<?php echo htmlspecialchars($courseName ?? ''); ?>"
-                       required
-                       placeholder="Enter course name">
+                       required placeholder="Enter course name">
             </div>
             
-            <div class="form-group">
-                <label for="course_code">Course Code <span class="required">*</span></label>
-                <input type="text" 
-                       id="course_code" 
-                       name="course_code" 
+            <div class="field">
+                <label for="course_code">Course Code *</label>
+                <input type="text" id="course_code" name="course_code" 
                        value="<?php echo htmlspecialchars($courseCode ?? ''); ?>"
-                       required
-                       placeholder="Example: CS101">
-                <small>Unique code for the course (e.g., CS101, MATH202)</small>
+                       required placeholder="Example: CS101">
+                <small>Unique code for course</small>
             </div>
             
-            <div class="form-group">
+            <div class="field">
                 <label for="description">Course Description</label>
-                <textarea id="description" 
-                          name="description" 
-                          rows="5"
+                <textarea id="description" name="description" rows="4"
                           placeholder="Enter course description..."><?php echo htmlspecialchars($description ?? ''); ?></textarea>
             </div>
             
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Create Course
-                </button>
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Create Course</button>
                 <a href="list.php" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
@@ -99,64 +97,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <style>
-.course-create {
+.form-container {
     max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.course-create h1 {
-    color: #2c3e50;
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-.course-form {
-    background: #fff;
+    margin: 40px auto;
     padding: 30px;
+    background: white;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.form-group {
+.form-container h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+}
+
+.field {
     margin-bottom: 20px;
 }
 
-.form-group label {
+.field label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
     color: #34495e;
 }
 
-.form-group input,
-.form-group textarea {
+.field input,
+.field textarea {
     width: 100%;
     padding: 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 14px;
-    transition: border-color 0.3s;
+    box-sizing: border-box;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.field input:focus,
+.field textarea:focus {
     outline: none;
     border-color: #3498db;
 }
 
-.form-group small {
+.field small {
     display: block;
     margin-top: 5px;
     color: #7f8c8d;
     font-size: 12px;
 }
 
-.required {
-    color: #e74c3c;
-}
-
-.form-actions {
+.actions {
     display: flex;
     gap: 10px;
     margin-top: 30px;
@@ -171,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     font-weight: 600;
     text-decoration: none;
     display: inline-block;
-    transition: all 0.3s;
+    text-align: center;
 }
 
 .btn-primary {
@@ -192,19 +182,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     background: #7f8c8d;
 }
 
-.alert {
+.message {
     padding: 15px;
     border-radius: 6px;
     margin-bottom: 20px;
 }
 
-.alert-success {
+.message-success {
     background: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
 }
 
-.alert-error {
+.message-error {
     background: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;

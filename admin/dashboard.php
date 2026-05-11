@@ -1,10 +1,12 @@
 <?php
+// Start session and include required files
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/course_functions.php';
 require_once __DIR__ . '/../includes/header.php';
 
+// Check if professor is logged in
 if (!isLoggedIn() || !isProfessor()) {
     redirect('/auth/login.php');
     exit;
@@ -15,7 +17,15 @@ $professorCourses = getCourses($userId);
 $recentQuestions = getRecentQuestions($userId, 'professor');
 $upcomingAppointments = getUpcomingAppointmentsList($userId, 'professor');
 $analytics = getProfessorAnalytics($userId);
-$pageTitle = 'لوحة تحكم الدكتور | EduFlow';
+$pageTitle = 'Professor Dashboard | EduFlow';
+
+// Calculate statistics
+$totalStudents = 0;
+foreach ($professorCourses as $course) {
+    $totalStudents += getCourseStudentCount($course['id']);
+}
+$pendingQuestions = getPendingQuestionsCount($userId, 'professor');
+$upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
 ?>
 
 <div class="container animate-fade">
