@@ -79,8 +79,8 @@ $pageTitle = 'لوحة تحكم الدكتور | EduFlow';
                             </div>
                             <h3 style="font-size: 1.1rem; margin-bottom: 1.5rem;"><?php echo htmlspecialchars($course['course_name']); ?></h3>
                             <div style="display: flex; gap: 0.5rem;">
-                                <a href="/courses/view.php?id=<?php echo $course['id']; ?>" class="btn btn-outline btn-sm" style="flex: 1;">عرض</a>
-                                <a href="/courses/manage.php?id=<?php echo $course['id']; ?>" class="btn btn-secondary btn-sm"><i class="fas fa-cog"></i></a>
+                                <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $course['id']; ?>" class="btn btn-outline btn-sm" style="flex: 1;">عرض</a>
+                                <a href="<?php echo $basePath; ?>/courses/manage.php?id=<?php echo $course['id']; ?>" class="btn btn-secondary btn-sm"><i class="fas fa-cog"></i></a>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -102,7 +102,7 @@ $pageTitle = 'لوحة تحكم الدكتور | EduFlow';
                             <div style="padding: 0.75rem; border-radius: var(--radius-sm); background: rgba(255,255,255,0.03); border-right: 3px solid var(--danger);">
                                 <div style="font-size: 0.85rem; font-weight: 600;"><?php echo htmlspecialchars($q['student_name']); ?></div>
                                 <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0;"><?php echo htmlspecialchars(mb_substr($q['question_text'], 0, 50)); ?>...</p>
-                                <a href="/questions/answer.php?id=<?php echo $q['id']; ?>" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">رد الآن ←</a>
+                                <a href="<?php echo $basePath; ?>/questions/answer.php?id=<?php echo $q['id']; ?>" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">رد الآن ←</a>
                             </div>
                         <?php endforeach; ?>
                     </div>

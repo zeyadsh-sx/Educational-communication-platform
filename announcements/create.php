@@ -58,7 +58,7 @@ $pageTitle = 'إنشاء إعلان';
     <div class="create-announcement">
         <div class="create-header">
             <h1>إنشاء إعلان</h1>
-            <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
+            <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
                 <i class="fas fa-arrow-right"></i> العودة للكورس
             </a>
         </div>
@@ -112,7 +112,7 @@ $pageTitle = 'إنشاء إعلان';
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-bullhorn"></i> نشر الإعلان
                 </button>
-                <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
+                <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
             </div>
         </form>
     </div>

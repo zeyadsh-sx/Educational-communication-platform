@@ -89,7 +89,7 @@ $pageTitle = 'رفع مادة دراسية';
     <div class="upload-material">
         <div class="upload-header">
             <h1>رفع مادة دراسية</h1>
-            <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
+            <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
                 <i class="fas fa-arrow-right"></i> العودة للكورس
             </a>
         </div>
@@ -143,7 +143,7 @@ $pageTitle = 'رفع مادة دراسية';
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-upload"></i> رفع المادة
                 </button>
-                <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
+                <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
             </div>
         </form>
     </div>

@@ -56,7 +56,7 @@ $pageTitle = 'حجز موعد';
     <div class="book-appointment">
         <div class="book-header">
             <h1>حجز موعد</h1>
-            <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
+            <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
                 <i class="fas fa-arrow-right"></i> العودة للكورس
             </a>
         </div>
@@ -98,7 +98,7 @@ $pageTitle = 'حجز موعد';
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-calendar-check"></i> حجز الموعد
                 </button>
-                <a href="/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
+                <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
             </div>
         </form>
     </div>

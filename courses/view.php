@@ -144,7 +144,7 @@ $pageTitle = htmlspecialchars($course['course_name']) . ' | EduFlow';
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3 style="margin: 0;">المواد الدراسية (<?php echo count($materials); ?>)</h3>
                         <?php if ($userType === 'professor'): ?>
-                            <a href="/materials/upload.php?course_id=<?php echo $courseId; ?>" class="btn btn-primary btn-sm">
+                            <a href="<?php echo $basePath; ?>/materials/upload.php?course_id=<?php echo $courseId; ?>" class="btn btn-primary btn-sm">
                                 <i class="fas fa-upload"></i> رفع ملف
                             </a>
                         <?php endif; ?>
@@ -183,7 +183,7 @@ $pageTitle = htmlspecialchars($course['course_name']) . ' | EduFlow';
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         <?php endif; ?>
-                                        <a href="/materials/download.php?id=<?php echo $mat['id']; ?>" class="btn btn-primary btn-sm" title="تحميل">
+                                        <a href="<?php echo $basePath; ?>/materials/download.php?id=<?php echo $mat['id']; ?>" class="btn btn-primary btn-sm" title="تحميل">
                                             <i class="fas fa-download"></i>
                                         </a>
                                     </div>
@@ -198,7 +198,7 @@ $pageTitle = htmlspecialchars($course['course_name']) . ' | EduFlow';
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3 style="margin: 0;">الإعلانات (<?php echo count($announcements); ?>)</h3>
                         <?php if ($userType === 'professor'): ?>
-                            <a href="/announcements/create.php?course_id=<?php echo $courseId; ?>" class="btn btn-primary btn-sm">
+                            <a href="<?php echo $basePath; ?>/announcements/create.php?course_id=<?php echo $courseId; ?>" class="btn btn-primary btn-sm">
                                 <i class="fas fa-plus"></i> إعلان جديد
                             </a>
                         <?php endif; ?>
@@ -232,7 +232,7 @@ $pageTitle = htmlspecialchars($course['course_name']) . ' | EduFlow';
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3 style="margin: 0;">الأسئلة (<?php echo count($questions); ?>)</h3>
                         <?php if ($userType === 'student'): ?>
-                            <a href="/questions/ask.php?course_id=<?php echo $courseId; ?>" class="btn btn-primary btn-sm">
+                            <a href="<?php echo $basePath; ?>/questions/ask.php?course_id=<?php echo $courseId; ?>" class="btn btn-primary btn-sm">
                                 <i class="fas fa-question"></i> اطرح سؤالاً
                             </a>
                         <?php endif; ?>
@@ -267,7 +267,7 @@ $pageTitle = htmlspecialchars($course['course_name']) . ' | EduFlow';
                                         </div>
                                     <?php elseif ($userType === 'professor'): ?>
                                         <div style="margin-top: 1rem; margin-right: 3rem;">
-                                            <a href="/questions/answer.php?id=<?php echo $q['id']; ?>" class="btn btn-outline btn-sm">رد على السؤال</a>
+                                            <a href="<?php echo $basePath; ?>/questions/answer.php?id=<?php echo $q['id']; ?>" class="btn btn-outline btn-sm">رد على السؤال</a>
                                         </div>
                                     <?php else: ?>
                                         <div style="margin-top: 1rem; margin-right: 3rem; font-size: 0.85rem; color: var(--warning);">

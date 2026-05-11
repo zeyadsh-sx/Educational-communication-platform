@@ -68,7 +68,7 @@ $pageTitle = 'طرح سؤال | EduFlow';
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1 style="font-size: 2rem; margin: 0;">طرح سؤال جديد</h1>
-            <a href="/courses/view.php?id=<?php echo $courseId; ?>" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+            <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" style="color: var(--primary); text-decoration: none; font-weight: 600;">
                 <i class="fas fa-arrow-right"></i> العودة للكورس
             </a>
         </div>

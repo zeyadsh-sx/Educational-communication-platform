@@ -80,7 +80,7 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
                                 <h4 style="margin-bottom: 0.25rem;"><?php echo htmlspecialchars($course['course_name']); ?></h4>
                                 <span class="badge badge-primary"><?php echo htmlspecialchars($course['course_code']); ?></span>
                             </div>
-                            <a href="/courses/view.php?id=<?php echo $course['id']; ?>" class="btn btn-outline btn-sm">عرض</a>
+                            <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $course['id']; ?>" class="btn btn-outline btn-sm">عرض</a>
                         </div>
                     <?php endforeach; ?>
                 </div>
