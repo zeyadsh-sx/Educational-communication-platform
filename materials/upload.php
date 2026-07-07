@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../includes/header.php';
 
 if (!isLoggedIn() || !isProfessor()) {
@@ -9,236 +10,197 @@ if (!isLoggedIn() || !isProfessor()) {
     exit;
 }
 
-$courseId = $_GET['course_id'] ?? 0;
+$courseId = getSafeGet('course_id', 0, 'int');
 $message = '';
 $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $message = 'Invalid security token. Please try again.';
+    if (!validateCSRFToken(getSafePost('csrf_token', ''))) {
+        $message = 'توكن الأمان غير صحيح';
         $messageType = 'error';
     } else {
-        $title = trim($_POST['title'] ?? '');
-        $description = trim($_POST['description'] ?? '');
-        $course_id = $_POST['course_id'] ?? 0;
+        $title = getSafePost('title', '', 'string');
+        $description = getSafePost('description', '', 'string');
+        $courseId = getSafePost('course_id', 0, 'int');
         
-        if (empty($title) || empty($course_id)) {
-            $message = 'Please fill in all required fields';
+        if (empty($title) || strlen($title) < 3) {
+            $message = 'عنوان المادة يجب أن يكون على الأقل 3 أحرف';
             $messageType = 'error';
-        } elseif (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            $message = 'Please select a file to upload';
+        } elseif ($courseId <= 0) {
+            $message = 'معرف الكورس غير صحيح';
             $messageType = 'error';
         } else {
-            $file = $_FILES['file'];
-            $fileName = $file['name'];
-            $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            // Validate file upload
+            $uploadResult = validateFileUpload('file', 
+                ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'zip', 'xls', 'xlsx'],
+                10485760  // 10MB
+            );
             
-            $allowedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'zip'];
-            $disallowedExtensions = ['php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'exe', 'sh', 'bat', 'cmd', 'vbs'];
-            
-            if (!in_array($fileType, $allowedExtensions) || in_array($fileType, $disallowedExtensions)) {
-                $message = 'Invalid file type. Only PDF, DOC, PPT, TXT, and ZIP are allowed.';
+            if (!$uploadResult['valid']) {
+                $message = $uploadResult['error'];
                 $messageType = 'error';
             } else {
-                $newFileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $fileType;
-                $uploadPath = __DIR__ . '/../uploads/materials/' . $newFileName;
+                $file = $uploadResult['file'];
                 
-                // Create directory if it doesn't exist
-                if (!is_dir(dirname($uploadPath))) {
-                    mkdir(dirname($uploadPath), 0755, true);
-                }
+                // Validate MIME type
+                $mimeAllowed = [
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.ms-powerpoint',
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'application/zip',
+                    'text/plain'
+                ];
                 
-                if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-                    $database = new Database();
-                    $conn = $database->connect();
-                    
-                    $stmt = $conn->prepare("INSERT INTO materials (title, description, file_name, file_path, file_type, course_id, professor_id, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                    $result = $stmt->execute([
-                        $title,
-                        $description,
-                        $fileName,
-                        $newFileName,
-                        $fileType,
-                        $course_id,
-                        getCurrentUserId(),
-                        getCurrentUserId()
-                    ]);
-                    
-                    if ($result) {
-                        $message = 'Material uploaded successfully!';
-                        $messageType = 'success';
-                    } else {
-                        $message = 'Error saving material to database';
-                        $messageType = 'error';
-                        // Clean up uploaded file if database insert fails
-                        unlink($uploadPath);
-                    }
-                } else {
-                    $message = 'Error uploading file';
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+                
+                if (!in_array($mimeType, $mimeAllowed)) {
+                    $message = 'نوع الملف غير مسموح (MIME type)';
                     $messageType = 'error';
+                } else {
+                    try {
+                        $pdo = getDB();
+                        $userId = getSafeUserId();
+                        
+                        // Verify user is professor of this course
+                        $checkStmt = $pdo->prepare("
+                            SELECT id FROM courses 
+                            WHERE id = ? AND professor_id = ?
+                        ");
+                        $checkStmt->execute([$courseId, $userId]);
+                        
+                        if (!$checkStmt->fetch()) {
+                            $message = 'أنت لا تملك صلاحية رفع ملفات لهذا الكورس';
+                            $messageType = 'error';
+                        } else {
+                            // Generate safe filename
+                            $newFileName = generateSafeFilename($file['name']);
+                            $uploadDir = __DIR__ . '/../uploads/materials';
+                            
+                            // Create directory if it doesn't exist
+                            if (!is_dir($uploadDir)) {
+                                mkdir($uploadDir, 0755, true);
+                            }
+                            
+                            $uploadPath = $uploadDir . '/' . $newFileName;
+                            
+                            if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+                                // Save to database
+                                $stmt = $pdo->prepare("
+                                    INSERT INTO materials (title, description, file_name, file_path, file_type, course_id, professor_id, uploaded_by, created_at) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                                ");
+                                
+                                $stmt->execute([
+                                    $title,
+                                    $description,
+                                    $file['name'],
+                                    'uploads/materials/' . $newFileName,
+                                    $uploadResult['extension'],
+                                    $courseId,
+                                    $userId,
+                                    $userId
+                                ]);
+                                
+                                $message = 'تم رفع المادة بنجاح!';
+                                $messageType = 'success';
+                                
+                                // Reset form
+                                $title = '';
+                                $description = '';
+                            } else {
+                                $message = 'خطأ في رفع الملف';
+                                $messageType = 'error';
+                            }
+                        }
+                    } catch (PDOException $e) {
+                        logError('Material upload error', ['error' => $e->getMessage()]);
+                        $message = 'حدث خطأ في قاعدة البيانات';
+                        $messageType = 'error';
+                    }
                 }
             }
         }
     }
 }
 
-$pageTitle = 'رفع مادة دراسية';
+$pageTitle = 'رفع مادة دراسية | EduFlow';
 ?>
 
-<div class="container">
-    <div class="upload-material">
-        <div class="upload-header">
-            <h1>رفع مادة دراسية</h1>
-            <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="back-link">
-                <i class="fas fa-arrow-right"></i> العودة للكورس
-            </a>
+<div class="container" style="margin: 2rem auto;">
+    <div class="card" style="max-width: 600px;">
+        <div class="card-header">
+            <h1>📤 رفع مادة دراسية</h1>
         </div>
+        
+        <div class="card-body">
+            <?php if ($message): ?>
+                <div class="alert alert-<?php echo htmlspecialchars($messageType); ?>">
+                    <i class="fas fa-<?php echo $messageType === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
+                    <span><?php echo htmlspecialchars($message); ?></span>
+                </div>
+            <?php endif; ?>
 
-        <?php if ($message): ?>
-            <div class="alert alert-<?php echo $messageType; ?>">
-                <?php echo htmlspecialchars($message); ?>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST" action="" class="upload-form" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-            <div class="form-group">
-                <label for="title">عنوان المادة <span class="required">*</span></label>
-                <input type="text" 
-                       id="title" 
-                       name="title" 
-                       value="<?php echo htmlspecialchars($title ?? ''); ?>"
-                       required
-                       placeholder="أدخل عنوان المادة">
-            </div>
-            
-            <div class="form-group">
-                <label for="course_id">الكورس <span class="required">*</span></label>
-                <input type="number" 
-                       id="course_id" 
-                       name="course_id" 
-                       value="<?php echo htmlspecialchars($courseId); ?>"
-                       required>
-            </div>
-            
-            <div class="form-group">
-                <label for="description">الوصف</label>
-                <textarea id="description" 
-                          name="description" 
-                          rows="4"
-                          placeholder="وصف المادة الدراسية..."><?php echo htmlspecialchars($description ?? ''); ?></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label for="file">الملف <span class="required">*</span></label>
-                <input type="file" 
-                       id="file" 
-                       name="file" 
-                       required
-                       accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip">
-                <small>الملفات المسموحة: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP</small>
-            </div>
-            
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> رفع المادة
-                </button>
-                <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
-            </div>
-        </form>
+            <form method="POST" action="" class="form-group" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                
+                <div class="form-group">
+                    <label for="title" class="form-label required">عنوان المادة</label>
+                    <input type="text" 
+                           id="title" 
+                           name="title" 
+                           class="form-control"
+                           value="<?php echo htmlspecialchars($title ?? ''); ?>"
+                           required
+                           minlength="3"
+                           placeholder="أدخل عنوان المادة">
+                </div>
+                
+                <div class="form-group">
+                    <label for="course_id" class="form-label required">معرف الكورس</label>
+                    <input type="number" 
+                           id="course_id" 
+                           name="course_id" 
+                           class="form-control"
+                           value="<?php echo htmlspecialchars($courseId); ?>"
+                           required
+                           min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">الوصف</label>
+                    <textarea id="description" 
+                              name="description" 
+                              class="form-control"
+                              rows="4"
+                              placeholder="وصف المادة الدراسية..."><?php echo htmlspecialchars($description ?? ''); ?></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="file" class="form-label required">الملف</label>
+                    <input type="file" 
+                           id="file" 
+                           name="file" 
+                           class="form-control"
+                           required
+                           accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.xls,.xlsx">
+                    <p class="form-help">الملفات المسموحة: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP, XLS, XLSX<br>الحد الأقصى للحجم: 10 MB</p>
+                </div>
+                
+                <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> رفع المادة
+                    </button>
+                    <a href="<?php echo $basePath ?? ''; ?>/courses/view.php?id=<?php echo $courseId; ?>" class="btn btn-secondary">إلغاء</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
-
-<style>
-.upload-material {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.upload-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.upload-header h1 {
-    color: #2c3e50;
-    margin: 0;
-}
-
-.back-link {
-    color: #3498db;
-    text-decoration: none;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.back-link:hover {
-    text-decoration: underline;
-}
-
-.upload-form {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #34495e;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #3498db;
-}
-
-.form-group small {
-    display: block;
-    margin-top: 5px;
-    color: #7f8c8d;
-    font-size: 12px;
-}
-
-.required {
-    color: #e74c3c;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 30px;
-}
-
-@media (max-width: 768px) {
-    .upload-header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: flex-start;
-    }
-}
-</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
