@@ -4,6 +4,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/emoji.php';
+require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/migrations.php';
 $basePath = getBaseUrl();
 $lang = $_SESSION['lang'] ?? 'ar';
 $dir = $lang === 'ar' ? 'rtl' : 'ltr';
