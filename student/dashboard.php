@@ -30,7 +30,7 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
 
 <div class="container animate-fade">
     <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">مرحباً، <?php echo htmlspecialchars($_SESSION['full_name']); ?>! 👋</h1>
+        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;"><?php echo getEmoji('welcome'); ?> مرحباً، <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h1>
         <p style="color: var(--text-muted); font-size: 1.1rem;">إليك نظرة شاملة على تقدمك الأكاديمي وتفاعلك في المنصة.</p>
     </div>
 
@@ -39,22 +39,22 @@ $pageTitle = 'لوحة تحكم الطالب | EduFlow';
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--primary); background: rgba(99, 102, 241, 0.1);"><i class="fas fa-star"></i></div>
             <div class="stat-value"><?php echo $studentPoints; ?></div>
-            <div class="stat-label">إجمالي النقاط</div>
+            <div class="stat-label"><?php echo getEmoji('points'); ?> إجمالي النقاط</div>
         </div>
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--accent); background: rgba(245, 158, 11, 0.1);"><i class="fas fa-trophy"></i></div>
             <div class="stat-value">#<?php echo $studentRank; ?></div>
-            <div class="stat-label">ترتيبك الحالي</div>
+            <div class="stat-label"><?php echo getEmoji('rank'); ?> ترتيبك الحالي</div>
         </div>
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"><i class="fas fa-book"></i></div>
             <div class="stat-value"><?php echo count($studentCourses); ?></div>
-            <div class="stat-label">الكورسات المسجلة</div>
+            <div class="stat-label"><?php echo getEmoji('courses'); ?> الكورسات المسجلة</div>
         </div>
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--info); background: rgba(59, 130, 246, 0.1);"><i class="fas fa-calendar-check"></i></div>
             <div class="stat-value"><?php echo getUpcomingAppointmentsCount($userId, 'student'); ?></div>
-            <div class="stat-label">المواعيد القادمة</div>
+            <div class="stat-label"><?php echo getEmoji('appointments'); ?> المواعيد القادمة</div>
         </div>
     </div>
 

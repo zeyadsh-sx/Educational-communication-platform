@@ -30,7 +30,7 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
 
 <div class="container animate-fade">
     <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">مرحباً، دكتور <?php echo htmlspecialchars($_SESSION['full_name']); ?>! 👨‍🏫</h1>
+        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;"><?php echo getEmoji('welcome'); ?> مرحباً، دكتور <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h1>
         <p style="color: var(--text-muted); font-size: 1.1rem;">إليك ملخص شامل لنشاط كورساتك وتفاعلك مع الطلاب.</p>
     </div>
 
@@ -39,7 +39,7 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--primary); background: rgba(99, 102, 241, 0.1);"><i class="fas fa-book"></i></div>
             <div class="stat-value"><?php echo count($professorCourses); ?></div>
-            <div class="stat-label">الكورسات الحالية</div>
+            <div class="stat-label"><?php echo getEmoji('courses'); ?> الكورسات الحالية</div>
         </div>
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"><i class="fas fa-users"></i></div>
@@ -52,17 +52,17 @@ $upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
                 echo $totalStudents;
                 ?>
             </div>
-            <div class="stat-label">إجمالي الطلاب</div>
+            <div class="stat-label"><?php echo getEmoji('users'); ?> إجمالي الطلاب</div>
         </div>
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);"><i class="fas fa-question-circle"></i></div>
             <div class="stat-value"><?php echo getPendingQuestionsCount($userId, 'professor'); ?></div>
-            <div class="stat-label">أسئلة معلقة</div>
+            <div class="stat-label"><?php echo getEmoji('questions'); ?> أسئلة معلقة</div>
         </div>
         <div class="card glass stat-card">
             <div class="stat-icon" style="color: var(--warning); background: rgba(245, 158, 11, 0.1);"><i class="fas fa-calendar-alt"></i></div>
             <div class="stat-value"><?php echo getUpcomingAppointmentsCount($userId, 'professor'); ?></div>
-            <div class="stat-label">المواعيد القادمة</div>
+            <div class="stat-label"><?php echo getEmoji('appointments'); ?> المواعيد القادمة</div>
         </div>
     </div>
 

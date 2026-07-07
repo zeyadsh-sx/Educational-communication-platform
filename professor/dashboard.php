@@ -29,7 +29,7 @@ $pageTitle = 'لوحة تحكم الدكتور | EduFlow';
 
 <div class="container animate-fade">
   <div style="margin-bottom: 3rem; text-align: center;">
-    <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">مرحباً د. <?php echo htmlspecialchars($_SESSION['full_name']); ?>! 👨‍🏫</h1>
+    <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;"><?php echo getEmoji('welcome'); ?> مرحباً د. <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h1>
     <p style="color: var(--text-muted); font-size: 1.1rem;">إدارة كورساتك وتفاعل مع طلابك في مكان واحد.</p>
   </div>
 
@@ -38,22 +38,22 @@ $pageTitle = 'لوحة تحكم الدكتور | EduFlow';
     <div class="card glass stat-card">
       <div class="stat-icon" style="color: var(--primary); background: rgba(99, 102, 241, 0.1);"><i class="fas fa-book"></i></div>
       <div class="stat-value"><?php echo count($professorCourses); ?></div>
-      <div class="stat-label">كورساتي</div>
+      <div class="stat-label"><?php echo getEmoji('courses'); ?> كورساتي</div>
     </div>
     <div class="card glass stat-card">
       <div class="stat-icon" style="color: var(--warning); background: rgba(245, 158, 11, 0.1);"><i class="fas fa-question-circle"></i></div>
       <div class="stat-value"><?php echo $pendingQuestions; ?></div>
-      <div class="stat-label">أسئلة معلقة</div>
+      <div class="stat-label"><?php echo getEmoji('questions'); ?> أسئلة معلقة</div>
     </div>
     <div class="card glass stat-card">
       <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"><i class="fas fa-calendar-check"></i></div>
       <div class="stat-value"><?php echo $upcomingAppointments; ?></div>
-      <div class="stat-label">المواعيد القادمة</div>
+      <div class="stat-label"><?php echo getEmoji('appointments'); ?> المواعيد القادمة</div>
     </div>
     <div class="card glass stat-card">
       <div class="stat-icon" style="color: var(--info); background: rgba(59, 130, 246, 0.1);"><i class="fas fa-star"></i></div>
       <div class="stat-value"><?php echo $professorPoints; ?></div>
-      <div class="stat-label">إجمالي النقاط</div>
+      <div class="stat-label"><?php echo getEmoji('points'); ?> إجمالي النقاط</div>
     </div>
   </div>
 
