@@ -3,6 +3,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/emoji.php';
+require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/migrations.php';
 $basePath = getBaseUrl();
 $lang = $_SESSION['lang'] ?? 'ar';
 $dir = $lang === 'ar' ? 'rtl' : 'ltr';
@@ -25,8 +28,62 @@ $theme = $_COOKIE['theme'] ?? 'light';
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Twemoji - Realistic Emoji Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/@twemoji/cdn@14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?php echo $basePath; ?>/css/style.css">
+    
+    <!-- Emoji Styling -->
+    <style>
+        img.emoji {
+            height: 1em;
+            width: 1em;
+            margin: 0 0.05em 0 0.1em;
+            vertical-align: -0.1em;
+        }
+        
+        .emoji {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            font-size: inherit;
+        }
+        
+        .emoji-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .achievement-badge {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            cursor: help;
+            transition: all 0.3s ease;
+        }
+        
+        .achievement-badge:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .achievement-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        
+        .rating-display {
+            display: inline-flex;
+            gap: 0.25rem;
+        }
+    </style>
 
     <style>
         .nav-wrapper {
@@ -349,6 +406,26 @@ $theme = $_COOKIE['theme'] ?? 'light';
     </div>
 
     <script>
+        // Initialize Twemoji Parser
+        document.addEventListener('DOMContentLoaded', () => {
+            twemoji.parse(document.body);
+        });
+        
+        // Re-parse when content is dynamically added
+        const observer = new MutationObserver((mutations) => {
+            let shouldParse = false;
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length > 0) {
+                    shouldParse = true;
+                }
+            });
+            if (shouldParse) {
+                twemoji.parse(document.body);
+            }
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+
         // Theme Toggle Logic
         const themeToggle = document.getElementById('themeToggle');
         const html = document.documentElement;

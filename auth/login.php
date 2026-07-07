@@ -1,27 +1,17 @@
 <?php
-// Error handling
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+session_start();
+require_once '../config/database.php';
+require_once '../includes/functions.php';
+require_once '../includes/security.php';
 
-try {
-    session_start();
-    require_once '../config/database.php';
-    require_once '../includes/functions.php';
+$lang = $_SESSION['lang'] ?? 'ar';
+$dir = $lang === 'ar' ? 'rtl' : 'ltr';
+$error = '';
+$success = '';
 
-    $lang = $_SESSION['lang'] ?? 'ar';
-    $dir = $lang === 'ar' ? 'rtl' : 'ltr';
-
-    $error = '';
-    $success = '';
-
-    $database = new Database();
-    $pdo = $database->connect();
-} catch (Exception $e) {
-    die("<h1>Error Loading Login Page</h1><p>Error: " . $e->getMessage() . "</p><p>File: " . $e->getFile() . ":" . $e->getLine() . "</p>");
-}
-
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['user_type'] === 'professor') {
+// Redirect if already logged in
+if (isLoggedIn()) {
+    if (isProfessor()) {
         redirect('/admin/dashboard.php');
     } else {
         redirect('/student/dashboard.php');
@@ -30,39 +20,55 @@ if (isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            $error = 'Invalid security token. Please refresh the page and try again.';
-        } else {
-        $email = $_POST['email'] ?? '';
-        $password = $_POST['password'] ?? '';
+    if (!validateCSRFToken(getSafePost('csrf_token', ''))) {
+        $error = 'توكن الأمان غير صحيح. الرجاء تحديث الصفحة والمحاولة مجدداً';
+    } else {
+        $email = getSafePost('email', '', 'email');
+        $password = getSafePost('password', '', 'string');
         
         if (empty($email) || empty($password)) {
             $error = 'الرجاء إدخال البريد الإلكتروني وكلمة المرور';
         } else {
-        try {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-            $stmt->execute([$email]);
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['full_name'] = $user['full_name'];
-                $_SESSION['user_type'] = $user['user_type'];
-
-                if ($user['user_type'] === 'professor') {
-                    redirect('/admin/dashboard.php');
+            try {
+                $pdo = getDB();
+                $stmt = $pdo->prepare("
+                    SELECT id, username, full_name, user_type, password 
+                    FROM users 
+                    WHERE email = ?
+                ");
+                $stmt->execute([$email]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($user && verifyPassword($password, $user['password'])) {
+                    // Login successful
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['full_name'] = $user['full_name'];
+                    $_SESSION['user_type'] = $user['user_type'];
+                    
+                    // Log the login attempt
+                    logError('Login successful', [
+                        'user_id' => $user['id'],
+                        'user_type' => $user['user_type'],
+                        'email' => $email
+                    ]);
+                    
+                    if ($user['user_type'] === 'professor') {
+                        redirect('/admin/dashboard.php');
+                    } else {
+                        redirect('/student/dashboard.php');
+                    }
+                    exit;
                 } else {
-                    redirect('/student/dashboard.php');
+                    // Log failed login attempt
+                    logError('Failed login attempt', ['email' => $email]);
+                    $error = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
                 }
-                exit;
-            } else {
-                $error = 'Incorrect email address or password';
+            } catch (PDOException $e) {
+                logError('Login database error', ['error' => $e->getMessage()]);
+                $error = 'حدث خطأ عند الاتصال بقاعدة البيانات';
             }
-        } catch (PDOException $e) {
-            $error = 'An error occurred while connecting to the database';
         }
-    }
     }
 }
 ?>
@@ -71,19 +77,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('login_title'); ?> - <?php echo __('hero_title'); ?></title>
+    <title><?php echo __('login_title'); ?> - EduFlow</title>
     <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             background-attachment: fixed;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
         }
 
         @keyframes fadeIn {
@@ -110,76 +121,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         @keyframes pop {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(0.95);
-            }
-            100% {
-                transform: scale(1);
-            }
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
         }
 
         .login-container {
-            background: white;
+            background: var(--card-bg);
             padding: 50px;
-            border-radius: 25px;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+            border-radius: 20px;
+            box-shadow: var(--shadow-xl);
             width: 100%;
             max-width: 420px;
             animation: fadeIn 0.8s ease-out;
+            border: 1px solid var(--border);
         }
+
         .login-header {
             text-align: center;
             margin-bottom: 35px;
         }
+
         .login-header h1 {
-            color: #333;
+            color: var(--text-primary);
             font-size: 32px;
             margin-bottom: 10px;
             font-weight: 800;
         }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
         .login-header i {
             font-size: 60px;
-            color: #667eea;
+            color: var(--primary);
             margin-bottom: 20px;
             animation: bounce 2s infinite;
             display: block;
         }
+
         .form-group {
             margin-bottom: 25px;
             animation: fadeIn 0.6s ease-out;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 10px;
-            color: #555;
+            color: var(--text-secondary);
             font-weight: 600;
             font-size: 14px;
-            transition: color 0.3s;
+            transition: var(--transition);
         }
+
         .form-group label:hover {
-            color: #667eea;
+            color: var(--primary);
         }
+
         .form-group input {
             width: 100%;
             padding: 16px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             border-radius: 12px;
             font-size: 16px;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
             transform: translateY(-2px);
         }
+
         .btn-login {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
             border-radius: 12px;
@@ -187,48 +209,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
             animation: fadeIn 0.8s ease-out;
         }
+
         .btn-login:hover {
             transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
         }
+
         .btn-login:active {
             animation: pop 0.3s ease;
         }
+
         .alert {
             padding: 15px 20px;
             border-radius: 10px;
             margin-bottom: 25px;
             text-align: center;
             animation: fadeIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            justify-content: center;
         }
+
         .alert-error {
-            background: linear-gradient(135deg, #fee 0%, #fcc 100%);
-            color: #c00;
-            border: 1px solid #fcc;
+            background: var(--danger-light);
+            color: var(--danger);
+            border: 1px solid var(--danger);
         }
+
         .alert-success {
-            background: linear-gradient(135deg, #efe 0%, #cfc 100%);
-            color: #060;
-            border: 1px solid #cfc;
+            background: var(--success-light);
+            color: var(--success);
+            border: 1px solid var(--success);
         }
+
+        .alert i {
+            font-size: 1.1rem;
+        }
+
         .register-link {
             text-align: center;
             margin-top: 25px;
-            color: #666;
+            color: var(--text-secondary);
             animation: fadeIn 1s ease-out;
         }
+
         .register-link a {
-            color: #667eea;
+            color: var(--primary);
             text-decoration: none;
             font-weight: 600;
             transition: all 0.3s;
         }
+
         .register-link a:hover {
-            color: #764ba2;
-            transform: scale(1.05);
+            color: var(--primary-dark);
+        }
+
+        @media (max-width: 640px) {
+            .login-container {
+                padding: 30px;
+                margin: 20px;
+            }
+            
+            .login-header h1 {
+                font-size: 24px;
+            }
+            
+            .login-header i {
+                font-size: 48px;
+            }
         }
     </style>
 </head>
@@ -236,29 +288,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-header">
             <i class="fas fa-graduation-cap"></i>
-            <h1><?php echo __('hero_title'); ?></h1>
+            <h1>EduFlow</h1>
             <p><?php echo __('login_title'); ?></p>
         </div>
         
         <?php if ($error): ?>
-            <div class="alert alert-error"><?php echo $error; ?></div>
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <span><?php echo htmlspecialchars($error); ?></span>
+            </div>
         <?php endif; ?>
         
         <?php if ($success): ?>
-            <div class="alert alert-success"><?php echo $success; ?></div>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                <span><?php echo htmlspecialchars($success); ?></span>
+            </div>
         <?php endif; ?>
         
         <form method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+            
             <div class="form-group">
-                <label for="email"><?php echo __('email_label'); ?></label>
-                <input type="email" id="email" name="email" required 
+                <label for="email">📧 <?php echo __('email_label'); ?></label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       required 
+                       autocomplete="email"
                        placeholder="<?php echo __('email_placeholder'); ?>">
             </div>
             
             <div class="form-group">
-                <label for="password"><?php echo __('password_label'); ?></label>
-                <input type="password" id="password" name="password" required 
+                <label for="password">🔒 <?php echo __('password_label'); ?></label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       required 
+                       autocomplete="current-password"
                        placeholder="<?php echo __('password_placeholder'); ?>">
             </div>
             

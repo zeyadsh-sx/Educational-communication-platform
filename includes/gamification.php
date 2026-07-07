@@ -73,10 +73,10 @@ function checkAchievements($studentId)
     $points = $stmt->fetchColumn();
 
     $achievements = [
-        ['name' => 'البداية القوية', 'threshold' => 50, 'icon' => 'fa-rocket'],
-        ['name' => 'المتعلم النشط', 'threshold' => 200, 'icon' => 'fa-fire'],
-        ['name' => 'بطل الكورسات', 'threshold' => 500, 'icon' => 'fa-trophy'],
-        ['name' => 'الأسطورة الأكاديمية', 'threshold' => 1000, 'icon' => 'fa-crown']
+        ['name' => 'البداية القوية', 'threshold' => 50, 'icon' => 'fa-rocket', 'emoji' => '🚀'],
+        ['name' => 'المتعلم النشط', 'threshold' => 200, 'icon' => 'fa-fire', 'emoji' => '🔥'],
+        ['name' => 'بطل الكورسات', 'threshold' => 500, 'icon' => 'fa-trophy', 'emoji' => '🏆'],
+        ['name' => 'الأسطورة الأكاديمية', 'threshold' => 1000, 'icon' => 'fa-crown', 'emoji' => '👑']
     ];
 
     foreach ($achievements as $ach) {
@@ -87,11 +87,11 @@ function checkAchievements($studentId)
             if (!$check->fetch()) {
                 // Award achievement
                 $ins = $pdo->prepare("INSERT INTO student_achievements (student_id, achievement_name, achievement_icon) VALUES (?, ?, ?)");
-                $ins->execute([$studentId, $ach['name'], $ach['icon']]);
+                $ins->execute([$studentId, $ach['name'], $ach['emoji']]);
 
                 // Add notification
                 $notif = $pdo->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
-                $notif->execute([$studentId, "لقد حصلت على وسام جديد: " . $ach['name']]);
+                $notif->execute([$studentId, $ach['emoji'] . " لقد حصلت على وسام جديد: " . $ach['name']]);
             }
         }
     }

@@ -55,22 +55,22 @@ try {
             <div class="card glass stat-card animate-fade" style="animation-delay: 0.3s;">
                 <div class="stat-icon"><i class="fas fa-users"></i></div>
                 <div class="stat-value">+1k</div>
-                <div class="stat-label"><?php echo __('stat_students'); ?></div>
+                <div class="stat-label"><?php echo getEmoji('users'); ?> <?php echo __('stat_students'); ?></div>
             </div>
             <div class="card glass stat-card animate-fade" style="animation-delay: 0.4s;">
                 <div class="stat-icon" style="color: var(--success);"><i class="fas fa-chalkboard-teacher"></i></div>
                 <div class="stat-value">+50</div>
-                <div class="stat-label"><?php echo __('stat_profs'); ?></div>
+                <div class="stat-label"><?php echo getEmoji('professor'); ?> <?php echo __('stat_profs'); ?></div>
             </div>
             <div class="card glass stat-card animate-fade" style="animation-delay: 0.5s;">
                 <div class="stat-icon" style="color: var(--accent);"><i class="fas fa-book"></i></div>
                 <div class="stat-value">+200</div>
-                <div class="stat-label"><?php echo __('stat_courses'); ?></div>
+                <div class="stat-label"><?php echo getEmoji('courses'); ?> <?php echo __('stat_courses'); ?></div>
             </div>
             <div class="card glass stat-card animate-fade" style="animation-delay: 0.6s;">
                 <div class="stat-icon" style="color: var(--info);"><i class="fas fa-file-alt"></i></div>
                 <div class="stat-value">+5k</div>
-                <div class="stat-label"><?php echo __('stat_materials'); ?></div>
+                <div class="stat-label"><?php echo getEmoji('materials'); ?> <?php echo __('stat_materials'); ?></div>
             </div>
         </div>
     </div>
@@ -110,22 +110,21 @@ try {
             <div>
                 <div class="card glass animate-fade" style="padding: 2rem; border-color: var(--primary);">
                     <h2 style="display: flex; align-items: center; gap: 1rem; font-size: 1.5rem; margin-bottom: 2rem;">
-                        <i class="fas fa-crown" style="color: var(--accent);"></i>
-                        لوحة شرف الطلاب
+                        <?php echo getEmoji('rank'); ?> لوحة شرف الطلاب
                     </h2>
                     
                     <div style="display: flex; flex-direction: column; gap: 1rem;">
                         <?php foreach ($leaderboard as $index => $student): ?>
                             <div class="leaderboard-item">
-                                <span class="rank">#<?php echo $index + 1; ?></span>
+                                <span class="rank"><?php echo getEmoji('rank'); ?> #<?php echo $index + 1; ?></span>
                                 <div class="avatar" style="background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">
                                     <?php echo mb_substr($student['full_name'], 0, 1); ?>
                                 </div>
                                 <div style="flex-grow: 1;">
                                     <div style="font-weight: 700;"><?php echo htmlspecialchars($student['full_name']); ?></div>
-                                    <div style="font-size: 0.8rem; color: var(--text-muted);">طالب نشط</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);"><?php echo getEmoji('streak'); ?> طالب نشط</div>
                                 </div>
-                                <div class="badge badge-primary"><?php echo $student['points']; ?> نقطة</div>
+                                <div class="badge badge-primary"><?php echo getEmoji('points'); ?> <?php echo $student['points']; ?> نقطة</div>
                             </div>
                         <?php endforeach; ?>
                         
