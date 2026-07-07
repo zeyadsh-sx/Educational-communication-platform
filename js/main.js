@@ -6,7 +6,30 @@ document.addEventListener('DOMContentLoaded', function() {
     initForms();
     initNotifications();
     initConfirmations();
+    initEmoji();
 });
+
+// Initialize Twemoji for realistic emoji rendering
+function initEmoji() {
+    if (typeof twemoji !== 'undefined') {
+        twemoji.parse(document.body);
+        
+        // Watch for dynamically added content
+        const observer = new MutationObserver((mutations) => {
+            let shouldParse = false;
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length > 0) {
+                    shouldParse = true;
+                }
+            });
+            if (shouldParse) {
+                twemoji.parse(document.body);
+            }
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+}
 
 // Navbar functionality
 function initNavbar() {
