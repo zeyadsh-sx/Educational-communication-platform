@@ -41,12 +41,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add'])) {
                 if ($checkStmt->fetch()) {
                     $error = 'البريد الإلكتروني موجود بالفعل';
                 } else {
+                    // Generate unique username from email
+                    $username = explode('@', $email)[0];
+                    $checkUserStmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+                    $checkUserStmt->execute([$username]);
+                    if ($checkUserStmt->fetch()) {
+                        $username = $username . '_' . rand(10, 99);
+                    }
+
                     $hashedPassword = hashPassword($password);
                     $stmt = $pdo->prepare("
-                        INSERT INTO users (full_name, email, password, user_type, created_at) 
-                        VALUES (?, ?, ?, 'professor', NOW())
+                        INSERT INTO users (username, full_name, email, password, user_type, created_at) 
+                        VALUES (?, ?, ?, ?, 'professor', NOW())
                     ");
-                    $stmt->execute([$name, $email, $hashedPassword]);
+                    $stmt->execute([$username, $name, $email, $hashedPassword]);
                     $success = 'تم إضافة الدكتور بنجاح';
                 }
             } catch (PDOException $e) {

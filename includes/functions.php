@@ -8,9 +8,11 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../config/database.php';
 
-function isLoggedIn()
-{
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+if (!function_exists('isLoggedIn')) {
+    function isLoggedIn()
+    {
+        return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    }
 }
 
 function getCurrentUserId()
@@ -205,12 +207,14 @@ function getRecentNotifications($userId, $limit = 5)
 }
 
 // Security Functions
-function generateCSRFToken()
-{
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+if (!function_exists('generateCSRFToken')) {
+    function generateCSRFToken()
+    {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
     }
-    return $_SESSION['csrf_token'];
 }
 
 function verifyCSRFToken($token)

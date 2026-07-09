@@ -61,6 +61,7 @@ CREATE TABLE appointments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     student_id INT,
     professor_id INT,
+    course_id INT,
     appointment_date DATETIME,
     duration INT DEFAULT 30,
     status VARCHAR(20) DEFAULT 'pending',
@@ -68,7 +69,8 @@ CREATE TABLE appointments (
     date_time DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 CREATE TABLE notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,

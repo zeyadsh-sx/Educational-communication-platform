@@ -7,6 +7,12 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/security.php';
 
+function migLog($msg) {
+    if (php_sapi_name() === 'cli') {
+        echo $msg;
+    }
+}
+
 try {
     $pdo = getDB();
     
@@ -26,10 +32,10 @@ try {
     
     try {
         $pdo->exec($sql);
-        echo "✓ material_downloads table created successfully\n";
+        migLog("✓ material_downloads table created successfully\n");
     } catch (PDOException $e) {
         if (strpos($e->getMessage(), 'already exists') !== false) {
-            echo "ℹ material_downloads table already exists\n";
+            migLog("ℹ material_downloads table already exists\n");
         } else {
             throw $e;
         }
@@ -47,10 +53,10 @@ try {
     
     try {
         $pdo->exec($sql);
-        echo "✓ rate_limit_attempts table created successfully\n";
+        migLog("✓ rate_limit_attempts table created successfully\n");
     } catch (PDOException $e) {
         if (strpos($e->getMessage(), 'already exists') !== false) {
-            echo "ℹ rate_limit_attempts table already exists\n";
+            migLog("ℹ rate_limit_attempts table already exists\n");
         } else {
             throw $e;
         }
@@ -68,9 +74,9 @@ try {
     if (!in_array('created_at', $columns)) {
         try {
             $pdo->exec("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-            echo "✓ Added created_at column to users table\n";
+            migLog("✓ Added created_at column to users table\n");
         } catch (PDOException $e) {
-            echo "ℹ created_at column already exists in users table\n";
+            migLog("ℹ created_at column already exists in users table\n");
         }
     }
     
@@ -85,9 +91,9 @@ try {
     if (!in_array('created_at', $materialColumns)) {
         try {
             $pdo->exec("ALTER TABLE materials ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-            echo "✓ Added created_at column to materials table\n";
+            migLog("✓ Added created_at column to materials table\n");
         } catch (PDOException $e) {
-            echo "ℹ created_at column already exists in materials table\n";
+            migLog("ℹ created_at column already exists in materials table\n");
         }
     }
     
@@ -102,15 +108,33 @@ try {
     if (!in_array('created_at', $announcementColumns)) {
         try {
             $pdo->exec("ALTER TABLE announcements ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-            echo "✓ Added created_at column to announcements table\n";
+            migLog("✓ Added created_at column to announcements table\n");
         } catch (PDOException $e) {
-            echo "ℹ created_at column already exists in announcements table\n";
+            migLog("ℹ created_at column already exists in announcements table\n");
+        }
+    }
+
+    // Migration 6: Ensure appointments table has course_id column
+    $checkAppointments = $pdo->prepare("
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'appointments' AND TABLE_SCHEMA = DATABASE()
+    ");
+    $checkAppointments->execute();
+    $appointmentColumns = array_map(fn($row) => $row['COLUMN_NAME'], $checkAppointments->fetchAll(PDO::FETCH_ASSOC));
+
+    if (!in_array('course_id', $appointmentColumns)) {
+        try {
+            $pdo->exec("ALTER TABLE appointments ADD COLUMN course_id INT NULL");
+            $pdo->exec("ALTER TABLE appointments ADD FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE");
+            migLog("✓ Added course_id column to appointments table\n");
+        } catch (PDOException $e) {
+            migLog("ℹ course_id column already exists or error in appointments table\n");
         }
     }
     
-    echo "\n✓ All migrations completed successfully!\n";
+    migLog("\n✓ All migrations completed successfully!\n");
     
 } catch (Exception $e) {
-    echo "✗ Migration error: " . $e->getMessage() . "\n";
+    migLog("✗ Migration error: " . $e->getMessage() . "\n");
     exit(1);
 }

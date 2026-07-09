@@ -29,7 +29,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Twemoji - Realistic Emoji Rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/@twemoji/cdn@14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@14.1.0/dist/twemoji.min.js" crossorigin="anonymous"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?php echo $basePath; ?>/css/style.css">

@@ -1,8 +1,24 @@
 <?php
 
-function isLoggedIn()
-{
-    return isset($_SESSION['user_id']);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (isset($_SESSION['user_id']) && (!isset($_SESSION['user']) || $_SESSION['user']['full_name'] !== ($_SESSION['full_name'] ?? '') || $_SESSION['user']['username'] !== ($_SESSION['username'] ?? ''))) {
+    $_SESSION['user'] = [
+        'id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'] ?? null,
+        'full_name' => $_SESSION['full_name'] ?? null,
+        'email' => $_SESSION['email'] ?? null,
+        'user_type' => $_SESSION['user_type'] ?? null
+    ];
+}
+
+if (!function_exists('isLoggedIn')) {
+    function isLoggedIn()
+    {
+        return isset($_SESSION['user_id']);
+    }
 }
 
 function requireLogin()
@@ -35,6 +51,13 @@ function loginUser($user)
     $_SESSION['full_name'] = $user['full_name'];
     $_SESSION['email'] = $user['email'];
     $_SESSION['user_type'] = $user['user_type'];
+    $_SESSION['user'] = [
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'full_name' => $user['full_name'],
+        'email' => $user['email'],
+        'user_type' => $user['user_type']
+    ];
 }
 
 function logoutUser()
