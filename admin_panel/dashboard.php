@@ -4,8 +4,10 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/nagah_theme.php';
 
-// Admin = any professor (extend to admin role if needed)
-if (!isLoggedIn() || !isProfessor()) { redirect('/auth/login.php'); exit; }
+// Admin guard — requires admin role
+requireRole('admin');
+
+$_activeSidebar = 'dashboard';
 
 $userId = getCurrentUserId();
 $base   = nagahBaseUrl();
@@ -39,41 +41,7 @@ require __DIR__ . '/../includes/nagah/head.php';
 require __DIR__ . '/../includes/nagah/nav.php';
 ?>
 <div class="flex min-h-[calc(100vh-64px)]">
-
-<!-- ===== SIDEBAR ===== -->
-<aside class="hidden lg:flex flex-col w-60 shrink-0 border-l border-slate-100 bg-white/80 backdrop-blur sticky top-16 self-start overflow-y-auto" style="height:calc(100vh - 64px)">
-    <div class="p-5 border-b border-slate-100">
-        <div class="flex items-center gap-3">
-            <span class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-sm" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
-                <?php echo mb_substr($_SESSION['full_name'] ?? 'A', 0, 2); ?>
-            </span>
-            <div class="min-w-0">
-                <p class="font-bold text-sm text-slate-800 truncate"><?php echo htmlspecialchars($_SESSION['full_name'] ?? ''); ?></p>
-                <p class="text-xs font-bold" style="color:#7c3aed">مدير النظام</p>
-            </div>
-        </div>
-    </div>
-    <nav class="p-3 space-y-0.5 flex-1">
-        <?php $navLinks = [
-            ['layout-dashboard', 'الرئيسية',         $base.'/admin_panel/dashboard.php',    true],
-            ['users',            'المستخدمون',        $base.'/admin_panel/users.php',        false],
-            ['graduation-cap',   'الطلاب',            $base.'/admin_panel/students.php',     false],
-            ['user-cog',         'المعلمون',          $base.'/admin/manage_professors.php',  false],
-            ['book-open',        'الكورسات',          $base.'/courses/list.php',             false],
-            ['folder-open',      'المواد',            $base.'/admin_panel/materials.php',    false],
-            ['megaphone',        'الإعلانات',         $base.'/announcements/view.php',       false],
-            ['bar-chart-2',      'الإحصائيات',        $base.'/admin_panel/analytics.php',   false],
-            ['settings',         'الإعدادات',         $base.'/admin_panel/settings.php',    false],
-            ['log-out',          'تسجيل الخروج',      $base.'/auth/logout.php',              false],
-        ];
-        foreach ($navLinks as [$icon,$label,$url,$active]): ?>
-        <a href="<?php echo $url; ?>" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?php echo $active ? 'font-bold' : 'text-slate-600 hover:bg-slate-100'; ?>" <?php echo $active ? 'style="background:rgba(124,58,237,.08);color:#7c3aed"' : ''; ?>>
-            <i data-lucide="<?php echo $icon; ?>" style="width:16px;height:16px;flex-shrink:0"></i>
-            <?php echo $label; ?>
-        </a>
-        <?php endforeach; ?>
-    </nav>
-</aside>
+<?php require __DIR__ . '/../includes/sidebars/sidebar_admin.php'; ?>
 
 <!-- ===== MAIN ===== -->
 <main class="flex-1 min-w-0 py-8 px-5 sm:px-8">

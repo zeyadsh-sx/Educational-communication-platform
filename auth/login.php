@@ -30,11 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($user && verifyPassword($password, $user['password'])) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['user_id']   = $user['id'];
+                    $_SESSION['username']  = $user['username'];
                     $_SESSION['full_name'] = $user['full_name'];
                     $_SESSION['user_type'] = $user['user_type'];
-                    redirect($user['user_type'] === 'professor' ? '/admin/dashboard.php' : '/student/dashboard.php');
+                    $dest = match($user['user_type']) {
+                        'admin'     => '/admin_panel/dashboard.php',
+                        'professor' => '/professor/dashboard.php',
+                        default     => '/student/dashboard.php',
+                    };
+                    redirect($dest);
                     exit;
                 }
                 $error = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';

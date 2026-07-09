@@ -25,14 +25,53 @@ function getCurrentUserType()
     return $_SESSION['user_type'] ?? null;
 }
 
-function isProfessor()
+function isProfessor(): bool
 {
     return getCurrentUserType() === 'professor';
 }
 
-function isStudent()
+function isStudent(): bool
 {
     return getCurrentUserType() === 'student';
+}
+
+/**
+ * Admin check — user_type must be 'admin'
+ */
+function isAdmin(): bool
+{
+    return getCurrentUserType() === 'admin';
+}
+
+/**
+ * Guard: abort with 403 page unless user has the required role.
+ * Usage: requireRole('admin') | requireRole('professor','admin') | requireRole('student')
+ */
+function requireRole(string ...$roles): void
+{
+    if (!isLoggedIn()) {
+        redirect('/auth/login.php');
+        exit;
+    }
+    $type = getCurrentUserType() ?? '';
+    if (!in_array($type, $roles, true)) {
+        http_response_code(403);
+        $base = getBaseUrl();
+        require_once __DIR__ . '/nagah_theme.php';
+        $pageTitle = '403 — غير مصرح';
+        require __DIR__ . '/nagah/head.php';
+        require __DIR__ . '/nagah/nav.php';
+        echo '<div class="min-h-[60vh] flex items-center justify-center px-5">';
+        echo '<div class="glass rounded-3xl p-12 text-center max-w-md">';
+        echo '<div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-red-100">';
+        echo '<i data-lucide="shield-off" style="width:32px;height:32px;color:#dc2626"></i></div>';
+        echo '<h1 class="display font-semibold text-2xl text-slate-900 mb-2">غير مصرح بالوصول</h1>';
+        echo '<p class="text-slate-500 text-sm mb-6">ليس لديك صلاحية لعرض هذه الصفحة.</p>';
+        echo '<a href="' . $base . '/index.php" class="btn-primary-nagah inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold">';
+        echo '<i data-lucide="home" style="width:15px;height:15px;"></i> الصفحة الرئيسية</a></div></div>';
+        require __DIR__ . '/nagah/footer.php';
+        exit;
+    }
 }
 
 function getBaseUrl()
