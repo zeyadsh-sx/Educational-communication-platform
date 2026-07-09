@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/../config/settings.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/emoji.php';
 require_once __DIR__ . '/security.php';
@@ -18,12 +19,15 @@ $theme = $_COOKIE['theme'] ?? 'light';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle ?? 'Educational Platform'; ?></title>
+    <title><?php echo $pageTitle ?? SITE_NAME ?? 'أكاديمية ماستر'; ?></title>
+
+    <!-- Bootstrap 5 RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -306,13 +310,20 @@ $theme = $_COOKIE['theme'] ?? 'light';
         <nav class="navbar glass">
             <a href="<?php echo $basePath; ?>/index.php" class="nav-brand">
                 <i class="fas fa-graduation-cap"></i>
-                <span>EduFlow</span>
+                <span>أكاديمية ماستر</span>
             </a>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="القائمة">
+                <i class="fas fa-bars"></i>
+            </button>
 
             <ul class="nav-links">
                 <li><a href="<?php echo $basePath; ?>/index.php" class="nav-link"><?php echo __('home'); ?></a></li>
                 <li><a href="<?php echo $basePath; ?>/courses/list.php" class="nav-link"><?php echo __('courses'); ?></a></li>
+                <li><a href="<?php echo $basePath; ?>/pages/teachers.php" class="nav-link"><?php echo __('teachers'); ?></a></li>
+                <li><a href="<?php echo $basePath; ?>/pages/schedule.php" class="nav-link"><?php echo __('schedule'); ?></a></li>
                 <li><a href="<?php echo $basePath; ?>/pages/about.php" class="nav-link"><?php echo __('about'); ?></a></li>
+                <li><a href="<?php echo $basePath; ?>/pages/contact.php" class="nav-link"><?php echo __('contact'); ?></a></li>
                 <?php if (isLoggedIn()): ?>
                     <?php if (isProfessor()): ?>
                         <li><a href="<?php echo $basePath; ?>/admin/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
@@ -405,6 +416,28 @@ $theme = $_COOKIE['theme'] ?? 'light';
         </nav>
     </div>
 
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <nav class="mobile-nav" id="mobileNav">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <strong style="color:var(--primary); font-size:1.1rem;">أكاديمية ماستر</strong>
+            <button class="mobile-menu-btn" id="mobileNavClose"><i class="fas fa-times"></i></button>
+        </div>
+        <a href="<?php echo $basePath; ?>/index.php" class="nav-link"><?php echo __('home'); ?></a>
+        <a href="<?php echo $basePath; ?>/courses/list.php" class="nav-link"><?php echo __('courses'); ?></a>
+        <a href="<?php echo $basePath; ?>/pages/teachers.php" class="nav-link"><?php echo __('teachers'); ?></a>
+        <a href="<?php echo $basePath; ?>/pages/schedule.php" class="nav-link"><?php echo __('schedule'); ?></a>
+        <a href="<?php echo $basePath; ?>/pages/about.php" class="nav-link"><?php echo __('about'); ?></a>
+        <a href="<?php echo $basePath; ?>/pages/contact.php" class="nav-link"><?php echo __('contact'); ?></a>
+        <?php if (isLoggedIn()): ?>
+            <a href="<?php echo isProfessor() ? $basePath.'/admin/dashboard.php' : $basePath.'/student/dashboard.php'; ?>" class="nav-link"><?php echo __('dashboard'); ?></a>
+            <a href="<?php echo $basePath; ?>/auth/logout.php" class="nav-link" style="color:var(--danger);"><?php echo __('logout'); ?></a>
+        <?php else: ?>
+            <a href="<?php echo $basePath; ?>/auth/login.php" class="nav-link"><?php echo __('login'); ?></a>
+            <a href="<?php echo $basePath; ?>/auth/register.php" class="nav-link" style="color:var(--primary);"><?php echo __('register'); ?></a>
+        <?php endif; ?>
+    </nav>
+
     <script>
         // Initialize Twemoji Parser
         document.addEventListener('DOMContentLoaded', () => {
@@ -425,6 +458,26 @@ $theme = $_COOKIE['theme'] ?? 'light';
         });
         
         observer.observe(document.body, { childList: true, subtree: true });
+
+        // Mobile menu
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileNavClose = document.getElementById('mobileNavClose');
+        const mobileNav = document.getElementById('mobileNav');
+        const mobileNavOverlay = document.getElementById('mobileNavOverlay');
+
+        function openMobileNav() {
+            mobileNav?.classList.add('open');
+            mobileNavOverlay?.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeMobileNav() {
+            mobileNav?.classList.remove('open');
+            mobileNavOverlay?.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        mobileMenuBtn?.addEventListener('click', openMobileNav);
+        mobileNavClose?.addEventListener('click', closeMobileNav);
+        mobileNavOverlay?.addEventListener('click', closeMobileNav);
 
         // Theme Toggle Logic
         const themeToggle = document.getElementById('themeToggle');

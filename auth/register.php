@@ -1,295 +1,179 @@
 <?php
-
 session_start();
 require_once '../config/database.php';
 require_once '../includes/functions.php';
-
-$lang = $_SESSION['lang'] ?? 'ar';
-$dir = $lang === 'ar' ? 'rtl' : 'ltr';
+require_once '../includes/security.php';
+require_once '../includes/nagah/auth_shell.php';
 
 $error = '';
 $success = '';
 
-$database = new Database();
-$pdo = $database->connect();
-
-if (isset($_SESSION['user_id'])) {
+if (isLoggedIn()) {
     redirect('/index.php');
     exit;
 }
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            $error = 'Invalid security token. Please refresh the page and try again.';
+        $error = 'توكن الأمان غير صحيح. الرجاء تحديث الصفحة والمحاولة مجدداً';
+    } else {
+        $email = getSafePost('email', '', 'email');
+        $password = getSafePost('password', '', 'string');
+        $confirm_password = getSafePost('confirm_password', '', 'string');
+        $full_name = getSafePost('full_name', '', 'string');
+        $phone = getSafePost('phone', '', 'string');
+        $parent_phone = getSafePost('parent_phone', '', 'string');
+        $grade = getSafePost('grade', '', 'string');
+        $education_system = getSafePost('education_system', '', 'string');
+
+        if (empty($email) || empty($password) || empty($full_name) || empty($phone) || empty($parent_phone) || empty($grade) || empty($education_system)) {
+            $error = 'الرجاء ملء جميع الحقول المطلوبة';
+        } elseif ($password !== $confirm_password) {
+            $error = 'كلمتا المرور غير متطابقتين';
+        } elseif (strlen($password) < 6) {
+            $error = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'الرجاء إدخال بريد إلكتروني صحيح';
         } else {
-            $username = $_POST['username'] ?? '';
-            $email = $_POST['email'] ?? '';
-            $password = $_POST['password'] ?? '';
-            $confirm_password = $_POST['confirm_password'] ?? '';
-            $full_name = $_POST['full_name'] ?? '';
-            $user_type = $_POST['user_type'] ?? 'student';
-            
-            if (empty($username) || empty($email) || empty($password) || empty($full_name)) {
-                $error = 'Please fill in all required fields.';
-            } elseif ($password !== $confirm_password) {
-                $error = 'Passwords do not match.';
-            } elseif (strlen($password) < 6) {
-                $error = 'Password must be at least 6 characters long.';
-            } else {
-                try {
-                    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
-                    $stmt->execute([$email, $username]);
-                    
-                    if ($stmt->fetch()) {
-                        $error = 'Email or username is already registered.';
-                    } else {
-                        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                        
-                        $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, user_type) VALUES (?, ?, ?, ?, ?)");
-                        $stmt->execute([$username, $email, $hashed_password, $full_name, $user_type]);
-                        
-                        $success = 'Registration successful! Please login.';
+            try {
+                $pdo = getDB();
+                $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
+                $stmt->execute([$email]);
+
+                if ($stmt->fetch()) {
+                    $error = 'البريد الإلكتروني مسجل بالفعل';
+                } else {
+                    $username = generateUsernameFromEmail($pdo, $email);
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    $gradeStored = $grade . ' | ' . $education_system;
+
+                    $cols = ['username', 'email', 'password', 'full_name', 'user_type'];
+                    $vals = [$username, $email, $hashed_password, $full_name, 'student'];
+                    $placeholders = ['?', '?', '?', '?', '?'];
+
+                    $checkCols = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND TABLE_SCHEMA = DATABASE()")->fetchAll(PDO::FETCH_COLUMN);
+                    if (in_array('phone', $checkCols)) {
+                        $cols[] = 'phone'; $vals[] = $phone; $placeholders[] = '?';
                     }
-                } catch (PDOException $e) {
-                    $error = 'An error occurred while connecting to the database.';
+                    if (in_array('parent_phone', $checkCols)) {
+                        $cols[] = 'parent_phone'; $vals[] = $parent_phone; $placeholders[] = '?';
+                    }
+                    if (in_array('grade', $checkCols)) {
+                        $cols[] = 'grade'; $vals[] = $gradeStored; $placeholders[] = '?';
+                    }
+
+                    $sql = 'INSERT INTO users (' . implode(', ', $cols) . ') VALUES (' . implode(', ', $placeholders) . ')';
+                    $pdo->prepare($sql)->execute($vals);
+
+                    $success = 'شكراً لك! تم استلام تسجيلك بنجاح. يمكنك تسجيل الدخول الآن.';
                 }
+            } catch (PDOException $e) {
+                $error = 'حدث خطأ أثناء الاتصال بقاعدة البيانات';
             }
         }
     }
+}
 
+$registerImage = 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=900&h=800&fit=crop';
+nagahAuthHead('إنشاء حساب | أكاديمية ماستر');
 ?>
-<!DOCTYPE html>
-<html lang="<?php echo $lang; ?>" dir="<?php echo $dir; ?>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('register_title'); ?> - <?php echo __('hero_title'); ?></title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+<section id="register" class="relative w-full py-16 sm:py-24 overflow-hidden auth-bg">
+    <span class="blob" style="width:360px;height:360px;background:#60A5FA;top:-80px;left:-60px;opacity:.35;"></span>
+    <span class="blob" style="width:300px;height:300px;background:#F59E0B;bottom:-60px;right:-40px;opacity:.25;"></span>
+    <div class="relative z-10 max-w-6xl mx-auto px-5">
+        <div class="glass rounded-[32px] overflow-hidden grid lg:grid-cols-2 items-stretch">
+            <div class="relative hidden lg:block min-h-[520px]">
+                <img src="<?php echo $registerImage; ?>" alt="طلاب يدرسون" loading="lazy" class="w-full h-full object-cover">
+            </div>
+            <div class="p-8 sm:p-10 lg:p-12">
+                <span class="tag-pill inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">انضم إلينا</span>
+                <h1 class="display font-semibold mt-4 text-2xl sm:text-3xl leading-tight text-slate-900">أنشئ حسابك في أكاديمية ماستر</h1>
+                <p class="mt-3 text-slate-500">املأ البيانات وسيتواصل معك فريقنا قريباً</p>
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-15px);
-            }
-            60% {
-                transform: translateY(-7px);
-            }
-        }
+                <?php if ($error): ?>
+                    <div class="<?php echo nagahFeedbackClass('error'); ?> mt-6" role="alert"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+                <?php if ($success): ?>
+                    <div class="<?php echo nagahFeedbackClass('success'); ?> mt-6" role="status">
+                        <?php echo htmlspecialchars($success); ?>
+                        <a href="login.php" class="block mt-2 font-bold underline">تسجيل الدخول</a>
+                    </div>
+                <?php endif; ?>
 
-        @keyframes pop {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(0.95);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
+                <?php if (!$success): ?>
+                <form method="POST" id="register-form" class="mt-7 grid sm:grid-cols-2 gap-4">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
 
-        .register-container {
-            background: white;
-            padding: 50px;
-            border-radius: 25px;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 480px;
-            animation: fadeIn 0.8s ease-out;
-        }
-        .register-header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
-        .register-header h1 {
-            color: #333;
-            font-size: 32px;
-            margin-bottom: 10px;
-            font-weight: 800;
-        }
-        .register-header i {
-            font-size: 60px;
-            color: #667eea;
-            margin-bottom: 20px;
-            animation: bounce 2s infinite;
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 25px;
-            animation: fadeIn 0.6s ease-out;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 10px;
-            color: #555;
-            font-weight: 600;
-            font-size: 14px;
-            transition: color 0.3s;
-        }
-        .form-group label:hover {
-            color: #667eea;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
-        }
-        .btn-register {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            animation: fadeIn 0.8s ease-out;
-        }
-        .btn-register:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-        }
-        .btn-register:active {
-            animation: pop 0.3s ease;
-        }
-        .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            text-align: center;
-            animation: fadeIn 0.5s ease-out;
-        }
-        .alert-error {
-            background: linear-gradient(135deg, #fee 0%, #fcc 100%);
-            color: #c00;
-            border: 1px solid #fcc;
-        }
-        .alert-success {
-            background: linear-gradient(135deg, #efe 0%, #cfc 100%);
-            color: #060;
-            border: 1px solid #cfc;
-        }
-        .login-link {
-            text-align: center;
-            margin-top: 25px;
-            color: #666;
-            animation: fadeIn 1s ease-out;
-        }
-        .login-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .login-link a:hover {
-            color: #764ba2;
-            transform: scale(1.05);
-        }
-    </style>
-</head>
-<body>
-    <div class="register-container">
-        <div class="register-header">
-            <i class="fas fa-user-plus"></i>
-            <h1><?php echo __('hero_title'); ?></h1>
-            <p><?php echo __('register_title'); ?></p>
-        </div>
-        
-        <?php if ($error): ?>
-            <div class="alert alert-error"><?php echo $error; ?></div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="alert alert-success"><?php echo $success; ?></div>
-        <?php endif; ?>
-        
-        <form method="POST" action="">
-            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-            <div class="form-group">
-                <label for="full_name"><?php echo __('full_name_label'); ?></label>
-                <input type="text" id="full_name" name="full_name" required 
-                       placeholder="<?php echo __('full_name_placeholder'); ?>">
+                    <div class="sm:col-span-2">
+                        <label for="full_name" class="block text-sm font-semibold mb-1.5">الاسم الكامل</label>
+                        <input id="full_name" name="full_name" type="text" class="field-input" required value="<?php echo htmlspecialchars($_POST['full_name'] ?? ''); ?>">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-semibold mb-1.5">البريد الإلكتروني</label>
+                        <input id="email" name="email" type="email" class="field-input" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+                    </div>
+                    <div>
+                        <label for="phone" class="block text-sm font-semibold mb-1.5">رقم الهاتف</label>
+                        <input id="phone" name="phone" type="tel" class="field-input" required placeholder="01xxxxxxxxx" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
+                    </div>
+                    <div>
+                        <label for="parent_phone" class="block text-sm font-semibold mb-1.5">هاتف ولي الأمر</label>
+                        <input id="parent_phone" name="parent_phone" type="tel" class="field-input" required placeholder="01xxxxxxxxx" value="<?php echo htmlspecialchars($_POST['parent_phone'] ?? ''); ?>">
+                    </div>
+                    <div>
+                        <label for="grade" class="block text-sm font-semibold mb-1.5">الصف الدراسي</label>
+                        <select id="grade" name="grade" class="field-input" required>
+                            <option value="" disabled <?php echo empty($_POST['grade']) ? 'selected' : ''; ?>>— اختر —</option>
+                            <option value="الصف الأول الثانوي" <?php echo ($_POST['grade'] ?? '') === 'الصف الأول الثانوي' ? 'selected' : ''; ?>>الصف الأول الثانوي</option>
+                            <option value="الصف الثاني الثانوي" <?php echo ($_POST['grade'] ?? '') === 'الصف الثاني الثانوي' ? 'selected' : ''; ?>>الصف الثاني الثانوي</option>
+                            <option value="الصف الثالث الثانوي" <?php echo ($_POST['grade'] ?? '') === 'الصف الثالث الثانوي' ? 'selected' : ''; ?>>الصف الثالث الثانوي</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="education_system" class="block text-sm font-semibold mb-1.5">النظام التعليمي</label>
+                        <select id="education_system" name="education_system" class="field-input" required>
+                            <option value="" disabled <?php echo empty($_POST['education_system']) ? 'selected' : ''; ?>>— اختر —</option>
+                            <option value="الثانوية العامة" <?php echo ($_POST['education_system'] ?? '') === 'الثانوية العامة' ? 'selected' : ''; ?>>الثانوية العامة</option>
+                            <option value="البكالوريا المصرية" <?php echo ($_POST['education_system'] ?? '') === 'البكالوريا المصرية' ? 'selected' : ''; ?>>البكالوريا المصرية</option>
+                            <option value="دولي (IGCSE/American)" <?php echo ($_POST['education_system'] ?? '') === 'دولي (IGCSE/American)' ? 'selected' : ''; ?>>دولي (IGCSE/American)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-semibold mb-1.5">كلمة المرور</label>
+                        <input id="password" name="password" type="password" class="field-input" required minlength="6" placeholder="6 أحرف على الأقل">
+                    </div>
+                    <div>
+                        <label for="confirm_password" class="block text-sm font-semibold mb-1.5">تأكيد كلمة المرور</label>
+                        <input id="confirm_password" name="confirm_password" type="password" class="field-input" required minlength="6">
+                    </div>
+                    <div class="sm:col-span-2 mt-1">
+                        <button type="submit" id="register-submit" class="btn-primary-nagah w-full py-3.5 rounded-full font-bold shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                            <span id="submit-label">إرسال التسجيل</span>
+                            <i data-lucide="loader-2" id="submit-spinner" class="spin hidden" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+                </form>
+                <div id="register-feedback" class="mt-4 hidden rounded-xl px-4 py-3 text-sm font-medium" role="status"></div>
+                <?php endif; ?>
+
+                <p class="text-center text-sm text-slate-500 mt-6">
+                    لديك حساب؟ <a href="login.php" class="font-bold text-blue-600">تسجيل الدخول</a>
+                </p>
             </div>
-            
-            <div class="form-group">
-                <label for="username"><?php echo __('username_label'); ?></label>
-                <input type="text" id="username" name="username" required 
-                       placeholder="<?php echo __('username_placeholder'); ?>">
-            </div>
-            
-            <div class="form-group">
-                <label for="email"><?php echo __('email_label'); ?></label>
-                <input type="email" id="email" name="email" required 
-                       placeholder="<?php echo __('email_placeholder'); ?>">
-            </div>
-            
-            <div class="form-group">
-                <label for="user_type"><?php echo __('account_type_label'); ?></label>
-                <select id="user_type" name="user_type" required>
-                    <option value="student"><?php echo __('student'); ?></option>
-                    <option value="professor"><?php echo __('professor'); ?></option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="password"><?php echo __('password_label'); ?></label>
-                <input type="password" id="password" name="password" required 
-                       placeholder="<?php echo __('password_placeholder'); ?>">
-            </div>
-            
-            <div class="form-group">
-                <label for="confirm_password"><?php echo __('password_confirm_label'); ?></label>
-                <input type="password" id="confirm_password" name="confirm_password" required 
-                       placeholder="<?php echo __('password_confirm_placeholder'); ?>">
-            </div>
-            
-            <button type="submit" class="btn-register">
-                <i class="fas fa-user-plus"></i> <?php echo __('register'); ?>
-            </button>
-        </form>
-        
-        <div class="login-link">
-            <p><?php echo __('have_account'); ?> <a href="login.php"><?php echo __('login'); ?></a></p>
         </div>
     </div>
-</body>
-</html>
+</section>
+
+<script>
+document.getElementById('register-form')?.addEventListener('submit', function() {
+    const btn = document.getElementById('register-submit');
+    const spinner = document.getElementById('submit-spinner');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+    spinner?.classList.remove('hidden');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+<?php nagahAuthFoot(); ?>

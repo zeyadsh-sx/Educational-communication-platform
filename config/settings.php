@@ -2,14 +2,9 @@
 // Application Settings
 
 // Site Information
-define('SITE_NAME', 'منصة الاتصال التعليمي');
+define('SITE_NAME', 'أكاديمية ماستر');
+define('SITE_TAGLINE', 'Master Academy');
 define('SITE_URL', 'http://localhost');
-
-// Database Settings
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'educational_platform');
-define('DB_USER', 'root');
-define('DB_PASS', '');
 
 // File Upload Settings
 define('UPLOAD_DIR', __DIR__ . '/../uploads/');

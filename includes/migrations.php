@@ -131,6 +131,23 @@ try {
             migLog("ℹ course_id column already exists or error in appointments table\n");
         }
     }
+
+    // Migration 7: Student profile fields for Master Academy
+    $userExtraCols = [
+        'phone' => "VARCHAR(20) NULL",
+        'parent_phone' => "VARCHAR(20) NULL",
+        'grade' => "VARCHAR(50) NULL",
+    ];
+    foreach ($userExtraCols as $col => $def) {
+        if (!in_array($col, $columns)) {
+            try {
+                $pdo->exec("ALTER TABLE users ADD COLUMN $col $def");
+                migLog("✓ Added $col column to users table\n");
+            } catch (PDOException $e) {
+                migLog("ℹ $col column error: " . $e->getMessage() . "\n");
+            }
+        }
+    }
     
     migLog("\n✓ All migrations completed successfully!\n");
     
