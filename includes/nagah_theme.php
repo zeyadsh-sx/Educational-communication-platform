@@ -11,15 +11,69 @@ function nagahBaseUrl(): string
 function getLandingSubjects(): array
 {
     return [
-        ['lucide' => 'sigma', 'title' => 'الرياضيات', 'desc' => 'جبر، هندسة، وتفاضل — شرح شامل للثانوية والبكالوريا', 'gradient' => 'linear-gradient(135deg,#2563EB,#60A5FA)'],
-        ['lucide' => 'atom', 'title' => 'الفيزياء', 'desc' => 'ميكانيكا، كهرباء، وموجات مع تجارب تفاعلية', 'gradient' => 'linear-gradient(135deg,#F59E0B,#fbbf24)'],
-        ['lucide' => 'flask-conical', 'title' => 'الكيمياء', 'desc' => 'كيمياء عضوية وغير عضوية بأسلوب مبسّط', 'gradient' => 'linear-gradient(135deg,#0ea5e9,#60A5FA)'],
-        ['lucide' => 'leaf', 'title' => 'الأحياء', 'desc' => 'علم الأحياء، الوراثة، والبيولوجيا الجزيئية', 'gradient' => 'linear-gradient(135deg,#16a34a,#4ade80)'],
-        ['lucide' => 'book-open-text', 'title' => 'اللغة العربية', 'desc' => 'نحو، بلاغة، أدب، ونصوص امتحانات', 'gradient' => 'linear-gradient(135deg,#7c3aed,#a78bfa)'],
-        ['lucide' => 'languages', 'title' => 'اللغة الإنجليزية', 'desc' => 'Grammar, reading & writing for exams', 'gradient' => 'linear-gradient(135deg,#2563EB,#818cf8)'],
-        ['lucide' => 'scroll', 'title' => 'التاريخ', 'desc' => 'تاريخ مصر والعرب والحضارات', 'gradient' => 'linear-gradient(135deg,#d97706,#f59e0b)'],
-        ['lucide' => 'globe-2', 'title' => 'الجغرافيا', 'desc' => 'جغرافيا طبيعية وبشرية وخرائط', 'gradient' => 'linear-gradient(135deg,#0891b2,#22d3ee)'],
-        ['lucide' => 'cpu', 'title' => 'علوم الحاسب', 'desc' => 'Computer Science & programming للبكالوريا', 'gradient' => 'linear-gradient(135deg,#4338ca,#6366f1)'],
+        [
+            'lucide'   => 'sigma',
+            'title'    => 'الرياضيات',
+            'desc'     => 'جبر، هندسة، وتفاضل وتكامل — الثانوية العامة والبكالوريا',
+            'gradient' => 'linear-gradient(135deg,#2563EB,#60A5FA)',
+            'badge'    => 'ثانوي · بكالوريا',
+        ],
+        [
+            'lucide'   => 'atom',
+            'title'    => 'الفيزياء',
+            'desc'     => 'ميكانيكا، كهرباء، وموجات — شرح تجريبي وتفاعلي',
+            'gradient' => 'linear-gradient(135deg,#F59E0B,#fbbf24)',
+            'badge'    => 'ثانوي · بكالوريا',
+        ],
+        [
+            'lucide'   => 'flask-conical',
+            'title'    => 'الكيمياء',
+            'desc'     => 'كيمياء عضوية وغير عضوية — تجارب ومسائل تطبيقية',
+            'gradient' => 'linear-gradient(135deg,#0ea5e9,#38bdf8)',
+            'badge'    => 'ثانوي · بكالوريا',
+        ],
+        [
+            'lucide'   => 'dna',
+            'title'    => 'الأحياء',
+            'desc'     => 'علم الأحياء والوراثة والبيولوجيا الجزيئية — ثانوي',
+            'gradient' => 'linear-gradient(135deg,#16a34a,#4ade80)',
+            'badge'    => 'ثانوي · بكالوريا',
+        ],
+        [
+            'lucide'   => 'book-open-text',
+            'title'    => 'اللغة العربية',
+            'desc'     => 'نحو، بلاغة، أدب، وتحليل نصوص الامتحانات',
+            'gradient' => 'linear-gradient(135deg,#7c3aed,#a78bfa)',
+            'badge'    => 'ثانوي عام',
+        ],
+        [
+            'lucide'   => 'languages',
+            'title'    => 'اللغة الإنجليزية',
+            'desc'     => 'Grammar, reading, writing & exam techniques',
+            'gradient' => 'linear-gradient(135deg,#2563EB,#818cf8)',
+            'badge'    => 'ثانوي · بكالوريا',
+        ],
+        [
+            'lucide'   => 'landmark',
+            'title'    => 'التاريخ',
+            'desc'     => 'تاريخ مصر والعرب والحضارات — تحليل ومراجعة',
+            'gradient' => 'linear-gradient(135deg,#d97706,#f59e0b)',
+            'badge'    => 'ثانوي عام',
+        ],
+        [
+            'lucide'   => 'globe-2',
+            'title'    => 'الجغرافيا',
+            'desc'     => 'جغرافيا طبيعية وبشرية وخرائط رقمية تفاعلية',
+            'gradient' => 'linear-gradient(135deg,#0891b2,#22d3ee)',
+            'badge'    => 'ثانوي عام',
+        ],
+        [
+            'lucide'   => 'cpu',
+            'title'    => 'علوم الحاسب',
+            'desc'     => 'Computer Science, Python & IB CS للبكالوريا',
+            'gradient' => 'linear-gradient(135deg,#4338ca,#6366f1)',
+            'badge'    => 'بكالوريا',
+        ],
     ];
 }
 
@@ -39,10 +93,38 @@ function getLandingFeatures(): array
 function getLandingTeachers(): array
 {
     return [
-        ['name' => 'أ. محمد حسن', 'subject' => 'الرياضيات', 'exp' => '15 سنة خبرة', 'rating' => '4.9', 'photo' => 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&h=400&fit=crop'],
-        ['name' => 'أ. أحمد سالم', 'subject' => 'الفيزياء', 'exp' => '12 سنة خبرة', 'rating' => '4.8', 'photo' => 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&h=400&fit=crop'],
-        ['name' => 'د. سارة محمود', 'subject' => 'الكيمياء', 'exp' => '10 سنوات خبرة', 'rating' => '4.9', 'photo' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&h=400&fit=crop'],
-        ['name' => 'أ. ياسمين أحمد', 'subject' => 'الإنجليزية', 'exp' => '8 سنوات خبرة', 'rating' => '4.7', 'photo' => 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&h=400&fit=crop'],
+        [
+            'name'    => 'أ. محمد حسن',
+            'subject' => 'الرياضيات — ثانوية عامة وبكالوريا',
+            'exp'     => '15 سنة خبرة',
+            'rating'  => '4.9',
+            // معلم يشرح على السبورة في فصل دراسي
+            'photo'   => 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=500&h=400&fit=crop',
+        ],
+        [
+            'name'    => 'أ. أحمد سالم',
+            'subject' => 'الفيزياء — ثانوية عامة',
+            'exp'     => '12 سنة خبرة',
+            'rating'  => '4.8',
+            // معلم يستخدم جهاز عرض في الفصل
+            'photo'   => 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=500&h=400&fit=crop',
+        ],
+        [
+            'name'    => 'د. سارة محمود',
+            'subject' => 'الكيمياء — بكالوريا',
+            'exp'     => '10 سنوات خبرة',
+            'rating'  => '4.9',
+            // معلمة في مختبر/فصل دراسي
+            'photo'   => 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=500&h=400&fit=crop',
+        ],
+        [
+            'name'    => 'أ. ياسمين أحمد',
+            'subject' => 'اللغة الإنجليزية — ثانوية وبكالوريا',
+            'exp'     => '8 سنوات خبرة',
+            'rating'  => '4.7',
+            // معلمة أمام مجموعة طلاب
+            'photo'   => 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=500&h=400&fit=crop',
+        ],
     ];
 }
 

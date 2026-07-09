@@ -1,258 +1,345 @@
 <?php
-// Start session and include required files
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/course_functions.php';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/nagah_theme.php';
 
-// Check if professor is logged in
 if (!isLoggedIn() || !isProfessor()) {
     redirect('/auth/login.php');
     exit;
 }
 
-$userId = getCurrentUserId();
-$professorCourses = getCourses($userId);
-$recentQuestions = getRecentQuestions($userId, 'professor');
+$userId   = getCurrentUserId();
+$base     = nagahBaseUrl();
+
+$professorCourses     = getCourses($userId);
+$recentQuestions      = getRecentQuestions($userId, 'professor');
 $upcomingAppointments = getUpcomingAppointmentsList($userId, 'professor');
-$analytics = getProfessorAnalytics($userId);
-$pageTitle = 'لوحة تحكم المعلم | أكاديمية ماستر';
+$analytics            = getProfessorAnalytics($userId);
 
 $pdo = getDB();
-$totalStudentsAll = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE user_type = 'student'")->fetchColumn();
-$totalCoursesAll = (int) $pdo->query("SELECT COUNT(*) FROM courses")->fetchColumn();
-$activeStudents = (int) $pdo->query("SELECT COUNT(DISTINCT student_id) FROM course_enrollments WHERE status = 'active'")->fetchColumn();
+$totalStudentsAll = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE user_type='student'")->fetchColumn();
+$activeStudents   = (int)$pdo->query("SELECT COUNT(DISTINCT student_id) FROM course_enrollments WHERE status='active'")->fetchColumn();
 
-// Calculate statistics
-$totalStudents = 0;
-foreach ($professorCourses as $course) {
-    $totalStudents += getCourseStudentCount($course['id']);
-}
+$totalMyStudents  = 0;
+foreach ($professorCourses as $c) $totalMyStudents += getCourseStudentCount($c['id']);
 $pendingQuestions = getPendingQuestionsCount($userId, 'professor');
-$upcomingAppointmentsCount = getUpcomingAppointmentsCount($userId, 'professor');
+$upcomingApptCount = getUpcomingAppointmentsCount($userId, 'professor');
+
+$pageTitle = 'لوحة تحكم المعلم | أكاديمية ماستر';
+require __DIR__ . '/../includes/nagah/head.php';
+require __DIR__ . '/../includes/nagah/nav.php';
 ?>
 
-<div class="container animate-fade">
-    <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;"><?php echo getEmoji('welcome'); ?> مرحباً، دكتور <?php echo htmlspecialchars($_SESSION['full_name']); ?>!</h1>
-        <p style="color: var(--text-muted); font-size: 1.1rem;">إليك ملخص شامل لنشاط كورساتك وتفاعلك مع الطلاب.</p>
-    </div>
+<div class="flex min-h-[calc(100vh-64px)]">
 
-    <!-- Stats Grid -->
-    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-        <div class="card glass stat-card">
-            <div class="stat-icon" style="color: var(--primary); background: rgba(99, 102, 241, 0.1);"><i class="fas fa-book"></i></div>
-            <div class="stat-value"><?php echo count($professorCourses); ?></div>
-            <div class="stat-label"><?php echo getEmoji('courses'); ?> الكورسات الحالية</div>
-        </div>
-        <div class="card glass stat-card">
-            <div class="stat-icon" style="color: var(--success); background: rgba(16, 185, 129, 0.1);"><i class="fas fa-users"></i></div>
-            <div class="stat-value">
-                <?php
-                $totalStudents = 0;
-                foreach ($professorCourses as $course) {
-                    $totalStudents += getCourseStudentCount($course['id']);
-                }
-                echo $totalStudents;
-                ?>
-            </div>
-            <div class="stat-label"><?php echo getEmoji('users'); ?> إجمالي الطلاب</div>
-        </div>
-        <div class="card glass stat-card">
-            <div class="stat-icon" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);"><i class="fas fa-question-circle"></i></div>
-            <div class="stat-value"><?php echo getPendingQuestionsCount($userId, 'professor'); ?></div>
-            <div class="stat-label"><?php echo getEmoji('questions'); ?> أسئلة معلقة</div>
-        </div>
-        <div class="card glass stat-card">
-            <div class="stat-icon" style="color: var(--warning); background: rgba(245, 158, 11, 0.1);"><i class="fas fa-calendar-alt"></i></div>
-            <div class="stat-value"><?php echo getUpcomingAppointmentsCount($userId, 'professor'); ?></div>
-            <div class="stat-label"><?php echo getEmoji('appointments'); ?> المواعيد القادمة</div>
-        </div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
-
-        <!-- Courses Management -->
-        <div class="card glass">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-list-check" style="margin-left: 10px; color: var(--primary);"></i> إدارة الكورسات</h2>
-                <a href="<?php echo getBaseUrl(); ?>/courses/create.php" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> كورس جديد</a>
-            </div>
-
-            <?php if (empty($professorCourses)): ?>
-                <div style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
-                    <p>لم تقم بإنشاء أي كورس بعد.</p>
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="hidden lg:flex flex-col w-60 shrink-0 border-l border-slate-100 bg-white/80 backdrop-blur sticky top-16 self-start overflow-y-auto" style="height:calc(100vh - 64px)">
+        <div class="p-5 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-sm shrink-0"
+                      style="background:linear-gradient(135deg,#2563EB,#60A5FA)">
+                    <?php echo mb_substr($_SESSION['full_name'] ?? 'A', 0, 2); ?>
+                </span>
+                <div class="min-w-0">
+                    <p class="font-bold text-sm text-slate-800 truncate"><?php echo htmlspecialchars($_SESSION['full_name'] ?? ''); ?></p>
+                    <p class="text-xs text-blue-600 font-medium">معلم</p>
                 </div>
-            <?php else: ?>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                    <?php foreach ($professorCourses as $course): ?>
-                        <div class="card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1.5rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                                <span class="badge badge-primary"><?php echo htmlspecialchars($course['course_code']); ?></span>
-                                <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-users"></i> <?php echo getCourseStudentCount($course['id']); ?></span>
-                            </div>
-                            <h3 style="font-size: 1.1rem; margin-bottom: 1.5rem;"><?php echo htmlspecialchars($course['course_name']); ?></h3>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <a href="<?php echo $basePath; ?>/courses/view.php?id=<?php echo $course['id']; ?>" class="btn btn-outline btn-sm" style="flex: 1;">عرض</a>
-                                <a href="<?php echo $basePath; ?>/courses/manage.php?id=<?php echo $course['id']; ?>" class="btn btn-secondary btn-sm"><i class="fas fa-cog"></i></a>
-                            </div>
+            </div>
+        </div>
+
+        <nav class="p-3 space-y-0.5 flex-1">
+            <?php
+            $navLinks = [
+                ['layout-dashboard', 'لوحة التحكم',    $base.'/admin/dashboard.php',        true],
+                ['book-open',        'الكورسات',        $base.'/courses/list.php',            false],
+                ['plus-circle',      'كورس جديد',       $base.'/courses/create.php',          false],
+                ['megaphone',        'الإعلانات',       $base.'/announcements/view.php',      false],
+                ['users',            'إدارة المعلمين',  $base.'/admin/manage_professors.php', false],
+                ['user',             'الملف الشخصي',    $base.'/auth/profile.php',            false],
+                ['log-out',          'تسجيل الخروج',    $base.'/auth/logout.php',             false],
+            ];
+            foreach ($navLinks as [$icon, $label, $url, $active]):
+            ?>
+            <a href="<?php echo $url; ?>"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+               <?php echo $active
+                    ? 'bg-blue-50 text-blue-700 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'; ?>">
+                <i data-lucide="<?php echo $icon; ?>" style="width:16px;height:16px;flex-shrink:0"></i>
+                <?php echo $label; ?>
+            </a>
+            <?php endforeach; ?>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="flex-1 min-w-0 py-8 px-5 sm:px-8">
+        <div class="max-w-5xl">
+
+            <!-- Welcome -->
+            <div class="mb-8">
+                <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">
+                    مرحباً، <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'أستاذ'); ?> 👋
+                </h1>
+                <p class="text-slate-500 mt-1 text-sm">إليك ملخص شامل لنشاطك اليوم</p>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <?php foreach ([
+                    [count($professorCourses), 'كورساتي',        'book',           '#2563EB', 'rgba(37,99,235,.1)'],
+                    [$totalMyStudents,          'إجمالي الطلاب',  'users',          '#16a34a', 'rgba(22,163,74,.1)'],
+                    [$pendingQuestions,         'أسئلة معلقة',    'message-circle', '#dc2626', 'rgba(220,38,38,.1)'],
+                    [$upcomingApptCount,        'مواعيد قادمة',   'calendar',       '#d97706', 'rgba(217,119,6,.1)'],
+                ] as [$val, $label, $icon, $color, $bg]): ?>
+                <div class="glass rounded-2xl p-5 reveal">
+                    <span class="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                          style="background:<?php echo $bg; ?>">
+                        <i data-lucide="<?php echo $icon; ?>" style="width:18px;height:18px;color:<?php echo $color; ?>"></i>
+                    </span>
+                    <p class="display font-semibold text-3xl" style="color:<?php echo $color; ?>"><?php echo $val; ?></p>
+                    <p class="text-xs text-slate-500 mt-1"><?php echo $label; ?></p>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Charts row -->
+            <div class="grid sm:grid-cols-3 gap-5 mb-8">
+
+                <!-- Questions doughnut -->
+                <div class="glass rounded-3xl p-6">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm flex items-center gap-2">
+                        <i data-lucide="pie-chart" style="width:15px;height:15px;color:#2563EB"></i> الأسئلة
+                    </h3>
+                    <canvas id="questionsChart" style="max-height:160px;"></canvas>
+                </div>
+
+                <!-- Active students -->
+                <div class="glass rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+                    <span class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+                          style="background:rgba(22,163,74,.1)">
+                        <i data-lucide="users" style="width:22px;height:22px;color:#16a34a"></i>
+                    </span>
+                    <p class="display font-semibold text-4xl" style="color:#2563EB"><?php echo $activeStudents; ?></p>
+                    <p class="text-slate-500 text-xs mt-1">طالب نشط</p>
+                    <p class="text-slate-400 text-xs mt-0.5">من <?php echo $totalStudentsAll; ?> مسجل</p>
+                    <div class="w-full bg-slate-100 rounded-full h-2 mt-4">
+                        <?php $pct = $totalStudentsAll > 0 ? round($activeStudents / $totalStudentsAll * 100) : 0; ?>
+                        <div class="h-2 rounded-full" style="width:<?php echo $pct; ?>%;background:linear-gradient(90deg,#2563EB,#60A5FA)"></div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1"><?php echo $pct; ?>% نسبة النشاط</p>
+                </div>
+
+                <!-- Enrollment bar -->
+                <div class="glass rounded-3xl p-6">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" style="width:15px;height:15px;color:#d97706"></i> التسجيل
+                    </h3>
+                    <canvas id="enrollmentChart" style="max-height:160px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Growth chart -->
+            <div class="glass rounded-3xl p-6 mb-8">
+                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <i data-lucide="trending-up" style="width:16px;height:16px;color:#2563EB"></i> نمو الطلاب خلال العام
+                </h3>
+                <canvas id="growthChart" style="max-height:200px;"></canvas>
+            </div>
+
+            <!-- My Courses -->
+            <div class="glass rounded-3xl overflow-hidden mb-8">
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="book" style="width:17px;height:17px;color:#2563EB"></i> إدارة الكورسات
+                    </h2>
+                    <a href="<?php echo $base; ?>/courses/create.php"
+                       class="btn-primary-nagah inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold shadow hover:-translate-y-0.5 transition-all">
+                        <i data-lucide="plus" style="width:14px;height:14px;"></i> كورس جديد
+                    </a>
+                </div>
+
+                <?php if (empty($professorCourses)): ?>
+                <div class="text-center py-14 text-slate-400">
+                    <i data-lucide="book-open" style="width:44px;height:44px;" class="mx-auto mb-3 opacity-30"></i>
+                    <p class="text-sm mb-4">لم تقم بإنشاء أي كورس بعد</p>
+                    <a href="<?php echo $base; ?>/courses/create.php"
+                       class="btn-primary-nagah inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold">
+                        أنشئ كورسك الأول
+                    </a>
+                </div>
+                <?php else: ?>
+                <div class="p-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <?php foreach ($professorCourses as $c): ?>
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 hover:bg-blue-50/30 transition">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="tag-pill text-xs font-bold px-2.5 py-1 rounded-full">
+                                <?php echo htmlspecialchars($c['course_code']); ?>
+                            </span>
+                            <span class="text-xs text-slate-400 flex items-center gap-1">
+                                <i data-lucide="users" style="width:11px;height:11px;"></i>
+                                <?php echo getCourseStudentCount($c['id']); ?>
+                            </span>
                         </div>
+                        <h3 class="font-bold text-slate-800 text-sm mb-3 leading-snug">
+                            <?php echo htmlspecialchars($c['course_name']); ?>
+                        </h3>
+                        <div class="flex gap-2">
+                            <a href="<?php echo $base; ?>/courses/view.php?id=<?php echo $c['id']; ?>"
+                               class="flex-1 text-center py-1.5 rounded-xl text-xs font-bold btn-primary-nagah">عرض</a>
+                            <a href="<?php echo $base; ?>/courses/manage.php?id=<?php echo $c['id']; ?>"
+                               class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 text-slate-600 hover:bg-white transition flex items-center">
+                                <i data-lucide="settings" style="width:12px;height:12px;"></i>
+                            </a>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Recent Activity Side Panel -->
-        <div style="display: flex; flex-direction: column; gap: 2rem;">
-
-            <!-- Quick Questions -->
-            <div class="card glass">
-                <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem;"><i class="fas fa-comments" style="margin-left: 10px; color: var(--danger);"></i> أسئلة حديثة</h2>
-                <?php if (empty($recentQuestions)): ?>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">لا توجد أسئلة حالياً.</p>
-                <?php else: ?>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <?php foreach ($recentQuestions as $q): ?>
-                            <div style="padding: 0.75rem; border-radius: var(--radius-sm); background: rgba(255,255,255,0.03); border-right: 3px solid var(--danger);">
-                                <div style="font-size: 0.85rem; font-weight: 600;"><?php echo htmlspecialchars($q['student_name']); ?></div>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0;"><?php echo htmlspecialchars(mb_substr($q['question_text'], 0, 50)); ?>...</p>
-                                <a href="<?php echo $basePath; ?>/questions/answer.php?id=<?php echo $q['id']; ?>" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">رد الآن ←</a>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
                 <?php endif; ?>
             </div>
 
-            <!-- Analytics Chart -->
-            <div class="card glass">
-                <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem;"><i class="fas fa-chart-pie" style="margin-left: 10px; color: var(--success);"></i> إحصائيات سريعة</h2>
-                <canvas id="questionsChart" style="max-height: 200px;"></canvas>
-            </div>
+            <!-- Bottom: Questions + Appointments -->
+            <div class="grid lg:grid-cols-2 gap-6">
 
-        </div>
-    </div>
+                <!-- Recent questions -->
+                <div class="glass rounded-3xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i data-lucide="message-circle" style="width:16px;height:16px;color:#dc2626"></i>
+                            أسئلة حديثة
+                            <?php if ($pendingQuestions > 0): ?>
+                            <span class="w-5 h-5 rounded-full bg-red-100 text-red-700 text-xs font-bold flex items-center justify-center">
+                                <?php echo $pendingQuestions; ?>
+                            </span>
+                            <?php endif; ?>
+                        </h2>
+                    </div>
+                    <?php if (empty($recentQuestions)): ?>
+                    <div class="text-center py-10 text-slate-400">
+                        <i data-lucide="message-circle" style="width:36px;height:36px;" class="mx-auto mb-2 opacity-30"></i>
+                        <p class="text-xs">لا توجد أسئلة معلقة</p>
+                    </div>
+                    <?php else: ?>
+                    <div class="p-4 space-y-3">
+                        <?php foreach ($recentQuestions as $q): ?>
+                        <div class="p-3 rounded-2xl bg-slate-50 border-r-4 border-red-400">
+                            <p class="font-semibold text-sm text-slate-800"><?php echo htmlspecialchars($q['student_name']); ?></p>
+                            <p class="text-xs text-slate-500 mt-0.5 truncate">
+                                <?php echo htmlspecialchars(mb_substr($q['question_text'], 0, 70)); ?>…
+                            </p>
+                            <a href="<?php echo $base; ?>/questions/answer.php?id=<?php echo $q['id']; ?>"
+                               class="text-xs font-bold text-blue-600 hover:underline mt-1.5 inline-block">
+                                رد الآن ←
+                            </a>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
 
-    <!-- Analytics Charts -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div class="card glass" style="padding: 1.5rem;">
-            <h3 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fas fa-chart-line" style="color: var(--primary);"></i> نمو الطلاب</h3>
-            <canvas id="growthChart" height="180"></canvas>
-        </div>
-        <div class="card glass" style="padding: 1.5rem;">
-            <h3 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fas fa-book" style="color: var(--success);"></i> التسجيل في الكورسات</h3>
-            <canvas id="enrollmentChart" height="180"></canvas>
-        </div>
-        <div class="card glass" style="padding: 1.5rem;">
-            <h3 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fas fa-money-bill-wave" style="color: var(--accent);"></i> الإيرادات</h3>
-            <canvas id="revenueChart" height="180"></canvas>
-        </div>
-        <div class="card glass" style="padding: 1.5rem;">
-            <h3 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fas fa-user-check" style="color: var(--info);"></i> الطلاب النشطون</h3>
-            <div style="text-align: center; padding: 1rem 0;">
-                <div style="font-size: 3rem; font-weight: 800; color: var(--primary);"><?php echo $activeStudents; ?></div>
-                <p style="color: var(--text-secondary); margin: 0;">من <?php echo $totalStudentsAll; ?> طالب مسجل</p>
-            </div>
-            <canvas id="activeChart" height="120"></canvas>
-        </div>
-    </div>
-
-    <!-- Appointments Management -->
-    <div class="card glass" style="margin-top: 2rem;">
-        <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;"><i class="fas fa-calendar-alt" style="margin-left: 10px; color: var(--warning);"></i> المواعيد القادمة</h2>
-        <?php if (empty($upcomingAppointments)): ?>
-            <div style="text-align: center; padding: 2.5rem 0; color: var(--text-muted);">
-                <i class="fas fa-calendar-times" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.35;"></i>
-                <p>لا توجد مواعيد جديدة في الوقت الحالي.</p>
-            </div>
-        <?php else: ?>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-                <?php foreach ($upcomingAppointments as $appointment): ?>
-                    <div class="card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1.25rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
-                            <div>
-                                <div style="font-size: 1rem; font-weight: 700;"><?php echo htmlspecialchars($appointment['other_party'] ?? 'طالب'); ?></div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);"><?php echo htmlspecialchars($appointment['status'] === 'pending' ? 'معلق' : ($appointment['status'] === 'confirmed' ? 'مؤكد' : 'ملغي')); ?></div>
+                <!-- Upcoming appointments -->
+                <div class="glass rounded-3xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i data-lucide="calendar" style="width:16px;height:16px;color:#d97706"></i>
+                            المواعيد القادمة
+                        </h2>
+                        <a href="<?php echo $base; ?>/appointments/view.php"
+                           class="text-xs font-bold text-blue-600 hover:underline">عرض الكل</a>
+                    </div>
+                    <?php if (empty($upcomingAppointments)): ?>
+                    <div class="text-center py-10 text-slate-400">
+                        <i data-lucide="calendar-x" style="width:36px;height:36px;" class="mx-auto mb-2 opacity-30"></i>
+                        <p class="text-xs">لا توجد مواعيد قادمة</p>
+                    </div>
+                    <?php else: ?>
+                    <div class="p-4 space-y-3">
+                        <?php
+                        $statusCfg = [
+                            'pending'   => ['bg-amber-100','text-amber-700','معلق'],
+                            'confirmed' => ['bg-green-100','text-green-700','مؤكد'],
+                            'cancelled' => ['bg-red-100',  'text-red-700',  'ملغي'],
+                        ];
+                        foreach (array_slice($upcomingAppointments, 0, 5) as $app):
+                            [$sbg, $stxt, $slbl] = $statusCfg[$app['status']] ?? ['bg-slate-100','text-slate-600',$app['status']];
+                        ?>
+                        <div class="p-3 rounded-2xl bg-slate-50 flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-semibold text-sm text-slate-800 truncate">
+                                    <?php echo htmlspecialchars($app['other_party'] ?? 'طالب'); ?>
+                                </p>
+                                <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <i data-lucide="clock" style="width:11px;height:11px;"></i>
+                                    <?php echo isset($app['date_time']) ? date('d/m/Y H:i', strtotime($app['date_time'])) : '—'; ?>
+                                </p>
+                                <?php if (!empty($app['notes'])): ?>
+                                <p class="text-xs text-slate-400 mt-0.5 truncate"><?php echo htmlspecialchars(mb_substr($app['notes'], 0, 50)); ?></p>
+                                <?php endif; ?>
                             </div>
-                            <span class="badge <?php echo $appointment['status'] === 'confirmed' ? 'badge-success' : ($appointment['status'] === 'pending' ? 'badge-warning' : 'badge-danger'); ?>">
-                                <?php echo $appointment['status'] === 'confirmed' ? 'مؤكد' : ($appointment['status'] === 'pending' ? 'معلق' : 'ملغي'); ?>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold shrink-0 <?php echo "$sbg $stxt"; ?>">
+                                <?php echo $slbl; ?>
                             </span>
                         </div>
-                        <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                            <i class="fas fa-calendar"></i> <?php echo date('d/m/Y', strtotime($appointment['date_time'])); ?>
-                            <i class="fas fa-clock" style="margin-right: 10px;"></i> <?php echo date('H:i', strtotime($appointment['date_time'])); ?>
-                        </div>
-                        <?php if (!empty($appointment['notes'])): ?>
-                            <div style="font-size: 0.85rem; color: var(--text-muted);">
-                                <strong>ملاحظات:</strong> <?php echo htmlspecialchars(mb_substr($appointment['notes'], 0, 60)); ?><?php echo strlen($appointment['notes']) > 60 ? '...' : ''; ?>
-                            </div>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
                     </div>
-                <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
             </div>
-            <div style="margin-top: 1.25rem; text-align: center;">
-                <a href="<?php echo $basePath; ?>/appointments/view.php" class="btn btn-outline">عرض جميع المواعيد</a>
-            </div>
-        <?php endif; ?>
-    </div>
+        </div>
+    </main>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const analytics = <?php echo json_encode($analytics); ?>;
-        const textColor = getComputedStyle(document.body).getPropertyValue('--text-primary') || '#333';
-        const chartDefaults = {
-            responsive: true,
-            plugins: { legend: { labels: { color: textColor, font: { family: 'Cairo' } } } },
-            scales: { y: { ticks: { color: textColor } }, x: { ticks: { color: textColor } } }
-        };
+document.addEventListener('DOMContentLoaded', function () {
+    const analytics = <?php echo json_encode($analytics); ?>;
+    const font = { family: "'Cairo', 'DM Sans', sans-serif", size: 11 };
+    const gridColor = 'rgba(0,0,0,.05)';
 
-        new Chart(document.getElementById('questionsChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['معلقة', 'مجابة'],
-                datasets: [{ data: [analytics.questions.pending, analytics.questions.answered], backgroundColor: ['#EF4444', '#10B981'], borderWidth: 0 }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor } } }, cutout: '70%' }
-        });
-
-        new Chart(document.getElementById('growthChart'), {
-            type: 'line',
-            data: {
-                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-                datasets: [{ label: 'طلاب جدد', data: [45, 62, 78, 95, 110, <?php echo $totalStudentsAll; ?>], borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.4 }]
-            },
-            options: chartDefaults
-        });
-
-        new Chart(document.getElementById('enrollmentChart'), {
-            type: 'bar',
-            data: {
-                labels: ['رياضيات', 'فيزياء', 'كيمياء', 'عربي', 'إنجليزي'],
-                datasets: [{ label: 'مسجلون', data: [120, 95, 88, 76, 82], backgroundColor: ['#2563EB', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'] }]
-            },
-            options: chartDefaults
-        });
-
-        new Chart(document.getElementById('revenueChart'), {
-            type: 'bar',
-            data: {
-                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-                datasets: [{ label: 'جنيه', data: [15000, 22000, 28000, 35000, 42000, 48000], backgroundColor: '#F59E0B' }]
-            },
-            options: chartDefaults
-        });
-
-        new Chart(document.getElementById('activeChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['نشط', 'غير نشط'],
-                datasets: [{ data: [<?php echo $activeStudents; ?>, <?php echo max(0, $totalStudentsAll - $activeStudents); ?>], backgroundColor: ['#2563EB', '#E5E7EB'], borderWidth: 0 }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor } } }, cutout: '65%' }
-        });
+    // Questions doughnut
+    new Chart(document.getElementById('questionsChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['معلقة', 'مجابة'],
+            datasets: [{ data: [analytics.questions?.pending ?? 0, analytics.questions?.answered ?? 0],
+                backgroundColor: ['#EF4444','#10B981'], borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: { cutout: '68%', plugins: { legend: { position: 'bottom', labels: { font, color: '#64748b', padding: 12 } } } }
     });
+
+    // Enrollment bar
+    new Chart(document.getElementById('enrollmentChart'), {
+        type: 'bar',
+        data: {
+            labels: ['رياضيات','فيزياء','كيمياء','عربي','إنجليزي'],
+            datasets: [{ data: [120,95,88,76,82],
+                backgroundColor: ['#2563EB','#3B82F6','#10B981','#F59E0B','#8B5CF6'],
+                borderRadius: 6, borderSkipped: false }]
+        },
+        options: { plugins: { legend: { display: false } },
+            scales: { y: { grid: { color: gridColor }, ticks: { font, color:'#94a3b8' } },
+                      x: { grid: { display: false }, ticks: { font, color:'#94a3b8' } } } }
+    });
+
+    // Growth line
+    new Chart(document.getElementById('growthChart'), {
+        type: 'line',
+        data: {
+            labels: ['يناير','فبراير','مارس','أبريل','مايو','يونيو'],
+            datasets: [{ label: 'طلاب جدد',
+                data: [45, 62, 78, 95, 110, <?php echo $totalStudentsAll; ?>],
+                borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,.08)',
+                fill: true, tension: 0.4, pointBackgroundColor: '#2563EB', pointRadius: 4 }]
+        },
+        options: { plugins: { legend: { labels: { font, color:'#64748b' } } },
+            scales: { y: { grid: { color: gridColor }, ticks: { font, color:'#94a3b8' } },
+                      x: { grid: { display: false }, ticks: { font, color:'#94a3b8' } } } }
+    });
+});
 </script>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require __DIR__ . '/../includes/nagah/footer.php'; ?>

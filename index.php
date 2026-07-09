@@ -20,8 +20,10 @@ try {
     die('<h1>خطأ في تحميل التطبيق</h1><p>' . htmlspecialchars($e->getMessage()) . '</p>');
 }
 
-$heroImage = 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=900&h=760&fit=crop';
-$ctaImage = 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=900&h=600&fit=crop';
+// طلاب في قاعة دراسية / مكتبة يدرسون
+$heroImage = 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=900&h=760&fit=crop';
+// طلاب خريجون فرحانين بشهاداتهم
+$ctaImage  = 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=900&h=600&fit=crop';
 ?>
 
 <!-- HERO -->
@@ -118,11 +120,19 @@ $ctaImage = 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=900&
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
             <?php foreach ($subjects as $subject): ?>
             <article class="lift bg-white rounded-3xl p-6 border border-slate-100">
-                <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-4" style="background:<?php echo $subject['gradient']; ?>">
-                    <i data-lucide="<?php echo $subject['lucide']; ?>"></i>
-                </span>
+                <div class="flex items-start justify-between mb-4">
+                    <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style="background:<?php echo $subject['gradient']; ?>">
+                        <i data-lucide="<?php echo $subject['lucide']; ?>" style="width:22px;height:22px;"></i>
+                    </span>
+                    <?php if (!empty($subject['badge'])): ?>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700"><?php echo $subject['badge']; ?></span>
+                    <?php endif; ?>
+                </div>
                 <h3 class="font-bold text-lg text-slate-900"><?php echo $subject['title']; ?></h3>
-                <p class="text-sm text-slate-500 mt-1"><?php echo $subject['desc']; ?></p>
+                <p class="text-sm text-slate-500 mt-1 leading-relaxed"><?php echo $subject['desc']; ?></p>
+                <a href="<?php echo $base; ?>/courses/list.php" class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                    استكشف الكورس <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
+                </a>
             </article>
             <?php endforeach; ?>
         </div>
@@ -145,13 +155,17 @@ $ctaImage = 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=900&
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             <?php foreach ($teachers as $teacher): ?>
             <article class="lift bg-white rounded-3xl overflow-hidden border border-slate-100">
-                <div class="h-52 overflow-hidden">
+                <div class="h-52 overflow-hidden relative">
                     <img src="<?php echo $teacher['photo']; ?>" alt="<?php echo htmlspecialchars($teacher['name']); ?>" loading="lazy" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
                 </div>
                 <div class="p-5">
                     <h3 class="font-bold text-lg text-slate-900"><?php echo $teacher['name']; ?></h3>
-                    <p class="text-sm font-medium" style="color:#2563EB"><?php echo $teacher['subject']; ?></p>
-                    <p class="text-xs text-slate-500 mt-1"><?php echo $teacher['exp']; ?></p>
+                    <p class="text-sm font-medium mt-0.5" style="color:#2563EB"><?php echo $teacher['subject']; ?></p>
+                    <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                        <i data-lucide="briefcase" style="width:12px;height:12px;"></i>
+                        <?php echo $teacher['exp']; ?>
+                    </p>
                     <div class="flex items-center gap-1 mt-3">
                         <span class="star flex gap-0.5"><?php echo renderLucideStars(); ?></span>
                         <span class="text-xs font-bold text-slate-600 mr-1"><?php echo $teacher['rating']; ?></span>

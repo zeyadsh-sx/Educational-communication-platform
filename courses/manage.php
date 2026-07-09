@@ -1,448 +1,231 @@
 <?php
-
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/course_functions.php';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/nagah_theme.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'professor') {
+if (!isLoggedIn() || !isProfessor()) {
     redirect('/auth/login.php');
     exit;
 }
 
-$courseId = $_GET['id'] ?? 0;
-$message = '';
-$messageType = '';
+$courseId    = (int)($_GET['id'] ?? 0);
+$base        = nagahBaseUrl();
+$message     = '';
+$messageKind = '';
 
 $course = getCourseById($courseId);
-
 if (!$course) {
-    echo '<div class="container"><div class="alert alert-error">Course not found</div></div>';
-    require_once __DIR__ . '/../includes/footer.php';
+    $pageTitle = 'غير موجود';
+    require __DIR__ . '/../includes/nagah/head.php';
+    require __DIR__ . '/../includes/nagah/nav.php';
+    echo '<div class="max-w-xl mx-auto px-5 py-20 text-center"><div class="glass rounded-3xl p-10"><p class="text-slate-500">الكورس غير موجود.</p></div></div>';
+    require __DIR__ . '/../includes/nagah/footer.php';
     exit;
 }
 
 if ($course['professor_id'] != $_SESSION['user_id']) {
-    echo '<div class="container"><div class="alert alert-error">You do not have permission to manage this course</div></div>';
-    require_once __DIR__ . '/../includes/footer.php';
+    redirect('/courses/list.php');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    $studentId = $_POST['student_id'] ?? 0;
-    
+    $action    = $_POST['action'] ?? '';
+    $studentId = (int)($_POST['student_id'] ?? 0);
+
     switch ($action) {
         case 'update_status':
-            $status = $_POST['status'] ?? 'active';
+            $status = in_array($_POST['status'] ?? '', ['active','suspended','completed']) ? $_POST['status'] : 'active';
             $result = updateStudentStatus($courseId, $studentId, $status);
-            $message = $result['message'];
-            $messageType = $result['success'] ? 'success' : 'error';
+            $message = $result['message']; $messageKind = $result['success'] ? 'success' : 'error';
             break;
-            
         case 'remove_student':
             $result = unenrollStudent($courseId, $studentId);
-            $message = $result['message'];
-            $messageType = $result['success'] ? 'success' : 'error';
+            $message = $result['message']; $messageKind = $result['success'] ? 'success' : 'error';
             break;
-            
         case 'update_course':
-            $courseName = trim($_POST['course_name'] ?? '');
+            $courseName  = trim($_POST['course_name'] ?? '');
             $description = trim($_POST['description'] ?? '');
-            
-            if (empty($courseName)) {
-                $message = 'Please enter the course name';
-                $messageType = 'error';
-            } else {
-                $result = updateCourse($courseId, $courseName, $description);
-                $message = $result['message'];
-                $messageType = $result['success'] ? 'success' : 'error';
-                
-                if ($result['success']) {
-                    $course = getCourseById($courseId);  
-                }
-            }
+            if (empty($courseName)) { $message = 'الرجاء إدخال اسم الكورس'; $messageKind = 'error'; break; }
+            $result = updateCourse($courseId, $courseName, $description);
+            $message = $result['message']; $messageKind = $result['success'] ? 'success' : 'error';
+            if ($result['success']) $course = getCourseById($courseId);
             break;
-            
         case 'delete_course':
             $result = deleteCourse($courseId);
-            if ($result['success']) {
-                header('Location: list.php?message=deleted');
-                exit;
-            } else {
-                $message = $result['message'];
-                $messageType = 'error';
-            }
+            if ($result['success']) { header('Location: list.php'); exit; }
+            $message = $result['message']; $messageKind = 'error';
             break;
     }
 }
 
-$students = getCourseStudents($courseId, null);
+$students     = getCourseStudents($courseId, null);
 $studentCount = getCourseStudentCount($courseId);
+$pageTitle    = 'إدارة: ' . htmlspecialchars($course['course_name']) . ' | أكاديمية ماستر';
+
+require __DIR__ . '/../includes/nagah/head.php';
+require __DIR__ . '/../includes/nagah/nav.php';
 ?>
 
-<div class="container">
-    <div class="course-manage">
-        <div class="page-header">
-            <div>
-                <a href="list.php" class="back-link">
-                    <i class="fas fa-arrow-right"></i> Back to Courses
-                </a>
-                <h1>Manage Course</h1>
-            </div>
+<!-- Banner -->
+<section class="relative overflow-hidden py-12 sm:py-14" style="background:linear-gradient(135deg,#1e3a8a,#2563EB,#3b82f6)">
+    <div class="absolute inset-0 grid-dots opacity-20"></div>
+    <div class="relative z-10 max-w-7xl mx-auto px-5">
+        <a href="view.php?id=<?php echo $courseId; ?>" class="inline-flex items-center gap-2 text-white/80 hover:text-white text-sm font-medium mb-4 transition">
+            <i data-lucide="arrow-right" style="width:16px;height:16px;"></i> العودة للكورس
+        </a>
+        <h1 class="display font-semibold text-3xl text-white">إدارة الكورس</h1>
+        <p class="text-white/70 mt-1"><?php echo htmlspecialchars($course['course_name']); ?></p>
+    </div>
+</section>
+
+<main class="max-w-5xl mx-auto px-5 py-10 pb-20 space-y-8">
+
+    <?php if ($message): ?>
+    <div class="rounded-2xl px-5 py-3.5 text-sm font-medium <?php echo $messageKind === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'; ?>">
+        <?php echo htmlspecialchars($message); ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <?php
+        $suspended = 0;
+        foreach ($students as $s) if ($s['status'] === 'suspended') $suspended++;
+        $statsCards = [
+            ['icon'=>'users',       'color'=>'#2563EB', 'bg'=>'rgba(37,99,235,.1)',  'val'=>$studentCount,        'label'=>'طلاب نشطون'],
+            ['icon'=>'user-x',      'color'=>'#dc2626', 'bg'=>'rgba(220,38,38,.1)',  'val'=>$suspended,           'label'=>'موقوفون'],
+            ['icon'=>'list-checks', 'color'=>'#16a34a', 'bg'=>'rgba(22,163,74,.1)',  'val'=>count($students),     'label'=>'إجمالي الطلاب'],
+            ['icon'=>'calendar',    'color'=>'#d97706', 'bg'=>'rgba(217,119,6,.1)',  'val'=>date('Y-m-d', strtotime($course['created_at'])), 'label'=>'تاريخ الإنشاء'],
+        ];
+        foreach ($statsCards as $sc):
+        ?>
+        <div class="glass rounded-2xl p-5 text-center">
+            <span class="w-10 h-10 rounded-xl mx-auto flex items-center justify-center mb-2" style="background:<?php echo $sc['bg']; ?>">
+                <i data-lucide="<?php echo $sc['icon']; ?>" style="width:18px;height:18px;color:<?php echo $sc['color']; ?>"></i>
+            </span>
+            <p class="display font-semibold text-xl text-slate-800"><?php echo $sc['val']; ?></p>
+            <p class="text-xs text-slate-500 mt-1"><?php echo $sc['label']; ?></p>
         </div>
-        
-        <?php if ($message): ?>
-            <div class="alert alert-<?php echo $messageType; ?>">
-                <?php echo htmlspecialchars($message); ?>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Edit Course Info -->
+    <div class="glass rounded-3xl p-6 sm:p-8">
+        <h2 class="font-bold text-slate-800 mb-6 flex items-center gap-2 text-lg">
+            <i data-lucide="pencil" style="width:18px;height:18px;color:#2563EB"></i> معلومات الكورس
+        </h2>
+        <form method="POST" class="grid sm:grid-cols-2 gap-5">
+            <input type="hidden" name="action" value="update_course">
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-slate-700">كود الكورس</label>
+                <input type="text" value="<?php echo htmlspecialchars($course['course_code']); ?>" class="field-input opacity-60 cursor-not-allowed" disabled>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1.5 text-slate-700">اسم الكورس <span class="text-red-500">*</span></label>
+                <input type="text" name="course_name" class="field-input" required value="<?php echo htmlspecialchars($course['course_name']); ?>">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-sm font-semibold mb-1.5 text-slate-700">الوصف</label>
+                <textarea name="description" rows="3" class="field-input resize-none"><?php echo htmlspecialchars($course['description'] ?? ''); ?></textarea>
+            </div>
+            <div class="sm:col-span-2">
+                <button type="submit" class="btn-primary-nagah inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold shadow-lg hover:-translate-y-0.5 transition-all">
+                    <i data-lucide="save" style="width:15px;height:15px;"></i> حفظ التغييرات
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Students Table -->
+    <div class="glass rounded-3xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-100">
+            <h2 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                <i data-lucide="users" style="width:18px;height:18px;color:#2563EB"></i>
+                الطلاب المسجلون (<?php echo count($students); ?>)
+            </h2>
+        </div>
+        <?php if (empty($students)): ?>
+            <div class="text-center py-14 text-slate-400">
+                <i data-lucide="users" style="width:48px;height:48px;" class="mx-auto mb-3 opacity-30"></i>
+                <p class="text-sm">لا يوجد طلاب مسجلون حتى الآن</p>
+            </div>
+        <?php else: ?>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100">
+                            <th class="text-right px-5 py-3 font-semibold text-slate-600">الطالب</th>
+                            <th class="text-right px-5 py-3 font-semibold text-slate-600 hidden sm:table-cell">البريد</th>
+                            <th class="text-right px-5 py-3 font-semibold text-slate-600 hidden md:table-cell">تاريخ التسجيل</th>
+                            <th class="text-right px-5 py-3 font-semibold text-slate-600">الحالة</th>
+                            <th class="text-center px-5 py-3 font-semibold text-slate-600">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($students as $s):
+                            $statusColors = ['active'=>'bg-green-100 text-green-700','suspended'=>'bg-amber-100 text-amber-700','completed'=>'bg-blue-100 text-blue-700'];
+                            $statusLabels = ['active'=>'نشط','suspended'=>'موقوف','completed'=>'مكتمل'];
+                        ?>
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/60">
+                            <td class="px-5 py-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#2563EB,#60A5FA)">
+                                        <?php echo mb_substr($s['full_name'], 0, 1); ?>
+                                    </span>
+                                    <span class="font-semibold text-slate-800"><?php echo htmlspecialchars($s['full_name']); ?></span>
+                                </div>
+                            </td>
+                            <td class="px-5 py-3 text-slate-500 hidden sm:table-cell"><?php echo htmlspecialchars($s['email']); ?></td>
+                            <td class="px-5 py-3 text-slate-500 hidden md:table-cell"><?php echo date('Y-m-d', strtotime($s['enrolled_at'])); ?></td>
+                            <td class="px-5 py-3">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold <?php echo $statusColors[$s['status']] ?? 'bg-slate-100 text-slate-600'; ?>">
+                                    <?php echo $statusLabels[$s['status']] ?? $s['status']; ?>
+                                </span>
+                            </td>
+                            <td class="px-5 py-3">
+                                <div class="flex items-center justify-center gap-2">
+                                    <form method="POST" class="inline">
+                                        <input type="hidden" name="action" value="update_status">
+                                        <input type="hidden" name="student_id" value="<?php echo $s['id']; ?>">
+                                        <select name="status" onchange="this.form.submit()" class="field-input text-xs py-1 px-2" style="border-radius:.75rem;width:auto;">
+                                            <option value="active"    <?php echo $s['status']==='active'    ? 'selected' : ''; ?>>نشط</option>
+                                            <option value="suspended" <?php echo $s['status']==='suspended' ? 'selected' : ''; ?>>موقوف</option>
+                                            <option value="completed" <?php echo $s['status']==='completed' ? 'selected' : ''; ?>>مكتمل</option>
+                                        </select>
+                                    </form>
+                                    <form method="POST" class="inline" onsubmit="return confirm('هل تريد حذف هذا الطالب من الكورس؟')">
+                                        <input type="hidden" name="action" value="remove_student">
+                                        <input type="hidden" name="student_id" value="<?php echo $s['id']; ?>">
+                                        <button type="submit" class="p-1.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition" title="حذف">
+                                            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         <?php endif; ?>
-
-        <div class="card">
-            <h2><i class="fas fa-info-circle"></i> Course Information</h2>
-            
-            <form method="POST" action="" class="course-form">
-                <input type="hidden" name="action" value="update_course">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Course Code</label>
-                        <input type="text" value="<?php echo htmlspecialchars($course['course_code']); ?>" disabled>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Course Name</label>
-                        <input type="text" 
-                               name="course_name" 
-                               value="<?php echo htmlspecialchars($course['course_name']); ?>"
-                               required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Course Description</label>
-                    <textarea name="description" rows="3"><?php echo htmlspecialchars($course['description'] ?? ''); ?></textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                </div>
-            </form>
-        </div>
-        
-
-        <div class="stats-row">
-            <div class="stat-card">
-                <i class="fas fa-users"></i>
-                <div class="stat-value"><?php echo $studentCount; ?></div>
-                <div class="stat-label">Active Students</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-user-clock"></i>
-                <div class="stat-value"><?php echo count($students) - $studentCount; ?></div>
-                <div class="stat-label">Suspended Students</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-users"></i> Registered Students (<?php echo count($students); ?>)</h2>
-            </div>
-            
-            <?php if (empty($students)): ?>
-                <div class="empty-state">
-                    <p>There are no students registered in this course yet.</p>
-                </div>
-            <?php else: ?>
-                <div class="students-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Enrollment Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($students as $student): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($student['full_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($student['email']); ?></td>
-                                    <td><?php echo date('Y-m-d', strtotime($student['enrolled_at'])); ?></td>
-                                    <td>
-                                        <span class="badge badge-<?php echo $student['status']; ?>">
-                                            <?php 
-                                                echo $student['status'] === 'active' ? 'Active' : 
-                                                    ($student['status'] === 'suspended' ? 'Suspended' : 'Completed'); 
-                                            ?>
-                                        </span>
-                                    </td>
-                                    <td class="actions">
-                                        <form method="POST" action="" class="inline-form">
-                                            <input type="hidden" name="action" value="update_status">
-                                            <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                            <select name="status" onchange="this.form.submit()">
-                                                <option value="active" <?php echo $student['status'] === 'active' ? 'selected' : ''; ?>>Active</option>
-                                                <option value="suspended" <?php echo $student['status'] === 'suspended' ? 'selected' : ''; ?>>Suspended</option>
-                                                <option value="completed" <?php echo $student['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                                            </select>
-                                        </form>
-                                        
-                                        <form method="POST" action="" class="inline-form" 
-                                              onsubmit="return confirm('Are you sure you want to remove this student?');">
-                                            <input type="hidden" name="action" value="remove_student">
-                                            <input type="hidden" name="student_id" value="<?php echo $student['id']; ?>">
-                                            <button type="submit" class="btn-icon btn-danger" title="Remove">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </div>
-        
-        <div class="card danger-zone">
-            <h2><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
-            <p>Deleting the course will remove all students and associated files.</p>
-            
-            <form method="POST" action="" onsubmit="return confirm('Are you sure you want to delete this course? This action cannot be undone!');">
-                <input type="hidden" name="action" value="delete_course">
-                <button type="submit" class="btn btn-danger">
-                    <i class="fas fa-trash"></i> Delete Course
-                </button>
-            </form>
-        </div>
     </div>
-</div>
 
-<style>
-.course-manage {
-    padding: 20px;
-    max-width: 1000px;
-    margin: 0 auto;
-}
+    <!-- Danger Zone -->
+    <div class="rounded-3xl border-2 border-red-200 p-6 bg-red-50/30">
+        <h2 class="font-bold text-red-700 flex items-center gap-2 mb-3">
+            <i data-lucide="triangle-alert" style="width:18px;height:18px;"></i> منطقة الخطر
+        </h2>
+        <p class="text-sm text-red-600 mb-5">حذف الكورس سيزيل جميع الطلاب والملفات المرتبطة به. هذا الإجراء لا يمكن التراجع عنه.</p>
+        <form method="POST" onsubmit="return confirm('هل أنت متأكد تماماً من حذف هذا الكورس؟ لا يمكن التراجع!')">
+            <input type="hidden" name="action" value="delete_course">
+            <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow transition">
+                <i data-lucide="trash-2" style="width:15px;height:15px;"></i> حذف الكورس نهائياً
+            </button>
+        </form>
+    </div>
 
-.page-header {
-    margin-bottom: 30px;
-}
+</main>
 
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    color: #3498db;
-    text-decoration: none;
-    margin-bottom: 10px;
-    font-weight: 600;
-}
-
-.back-link i { margin-left: 8px; }
-
-h1 {
-    color: #2c3e50;
-    margin: 0;
-}
-
-.card {
-    background: white;
-    border-radius: 10px;
-    padding: 25px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.card h2 {
-    color: #2c3e50;
-    font-size: 18px;
-    margin: 0 0 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.card h2 i { color: #3498db; }
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 15px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: #34495e;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #3498db;
-}
-
-.form-group input:disabled {
-    background: #f8f9fa;
-    color: #7f8c8d;
-}
-
-.form-actions {
-    margin-top: 20px;
-}
-
-.stats-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.stat-card i {
-    font-size: 30px;
-    color: #3498db;
-    margin-bottom: 10px;
-}
-
-.stat-value {
-    font-size: 32px;
-    font-weight: bold;
-    color: #2c3e50;
-}
-
-.stat-label {
-    color: #7f8c8d;
-    font-size: 14px;
-}
-
-.students-table {
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 12px;
-    text-align: right;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-th {
-    background: #f8f9fa;
-    color: #2c3e50;
-    font-weight: 600;
-}
-
-.badge {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.badge-active { background: #27ae60; color: white; }
-.badge-suspended { background: #f39c12; color: white; }
-.badge-completed { background: #3498db; color: white; }
-
-.actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.inline-form {
-    display: inline;
-}
-
-.inline-form select {
-    padding: 5px 10px;
-    font-size: 13px;
-}
-
-.btn-icon {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-danger { background: #e74c3c; color: white; }
-.btn-danger:hover { background: #c0392b; }
-
-.danger-zone {
-    border: 2px solid #e74c3c;
-}
-
-.danger-zone h2 i { color: #e74c3c; }
-
-.danger-zone p {
-    color: #7f8c8d;
-    margin-bottom: 15px;
-}
-
-.alert {
-    padding: 15px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-}
-
-.alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-block;
-    transition: all 0.3s;
-}
-
-.btn-primary { background: #3498db; color: white; }
-.btn-primary:hover { background: #2980b9; }
-
-.empty-state {
-    text-align: center;
-    padding: 40px;
-    color: #7f8c8d;
-}
-</style>
-
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require __DIR__ . '/../includes/nagah/footer.php'; ?>
