@@ -44,10 +44,10 @@ try {
         
         // Insert announcement
         $stmt = $pdo->prepare("
-            INSERT INTO announcements (course_id, title, content, created_by, created_at) 
-            VALUES (?, ?, ?, ?, NOW())
+            INSERT INTO announcements (title, content, professor_id, course_id, priority, created_by, created_at) 
+            VALUES (?, ?, ?, ?, 'medium', ?, NOW())
         ");
-        $stmt->execute([$courseId, $title, $content, $userId]);
+        $stmt->execute([$title, $content, $userId, $courseId, $userId]);
         
         jsonSuccess(['id' => $pdo->lastInsertId()], 'تم إنشاء الإعلان بنجاح');
         

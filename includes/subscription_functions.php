@@ -256,10 +256,18 @@ function getCourseAttendance(int $courseId): array
 
 function getStudentAttendanceRate(int $studentId, int $courseId): int
 {
-    $pdo   = getDB();
-    $total = (int)$pdo->prepare("SELECT COUNT(*) FROM attendance WHERE student_id=? AND course_id=?")->execute([$studentId,$courseId]) ? $pdo->query("SELECT COUNT(*) FROM attendance WHERE student_id=$studentId AND course_id=$courseId")->fetchColumn() : 0;
+    $pdo = getDB();
+
+    $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM attendance WHERE student_id = ? AND course_id = ?");
+    $totalStmt->execute([$studentId, $courseId]);
+    $total = (int)$totalStmt->fetchColumn();
+
     if ($total === 0) return 0;
-    $present = (int)$pdo->query("SELECT COUNT(*) FROM attendance WHERE student_id=$studentId AND course_id=$courseId AND status='present'")->fetchColumn();
+
+    $presentStmt = $pdo->prepare("SELECT COUNT(*) FROM attendance WHERE student_id = ? AND course_id = ? AND status = 'present'");
+    $presentStmt->execute([$studentId, $courseId]);
+    $present = (int)$presentStmt->fetchColumn();
+
     return (int)round($present / $total * 100);
 }
 

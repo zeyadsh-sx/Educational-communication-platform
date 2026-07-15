@@ -326,7 +326,9 @@ $theme = $_COOKIE['theme'] ?? 'light';
                 <li><a href="<?php echo $basePath; ?>/pages/contact.php" class="nav-link"><?php echo __('contact'); ?></a></li>
                 <?php if (isLoggedIn()): ?>
                     <?php if (isProfessor()): ?>
-                        <li><a href="<?php echo $basePath; ?>/admin/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
+                        <li><a href="<?php echo $basePath; ?>/professor/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
+                    <?php elseif (isAdmin()): ?>
+                        <li><a href="<?php echo $basePath; ?>/admin_panel/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
                     <?php else: ?>
                         <li><a href="<?php echo $basePath; ?>/student/dashboard.php" class="nav-link"><?php echo __('dashboard'); ?></a></li>
                     <?php endif; ?>

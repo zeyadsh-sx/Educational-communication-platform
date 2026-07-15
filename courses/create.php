@@ -19,7 +19,7 @@ $description = '';
 $base        = nagahBaseUrl();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $message = 'توكن الأمان غير صحيح. الرجاء تحديث الصفحة.';
         $messageKind = 'error';
     } else {
@@ -58,7 +58,7 @@ require __DIR__ . '/../includes/nagah/nav.php';
     <div class="absolute inset-0 grid-dots opacity-60"></div>
 
     <div class="relative z-10 w-full max-w-xl mx-auto px-5">
-        <a href="<?php echo $base; ?>/admin/dashboard.php" class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 text-sm font-medium mb-6 transition">
+        <a href="<?php echo $base; ?>/professor/dashboard.php" class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 text-sm font-medium mb-6 transition">
             <i data-lucide="arrow-right" style="width:16px;height:16px;"></i> العودة للوحة التحكم
         </a>
 

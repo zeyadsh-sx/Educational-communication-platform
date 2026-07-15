@@ -1,102 +1,114 @@
 <?php
-header("Content-Type: application/json");
+/**
+ * API — إدارة المستخدمين (GET/POST/PUT)
+ */
+if (session_status() === PHP_SESSION_NONE) session_start();
+header('Content-Type: application/json; charset=utf-8');
 
-session_start();
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/auth.php';
-
-$database = new Database();
-$conn = $database->connect();
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/security.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
 
-    case "GET":
-        requireLogin();
-        echo json_encode(["user" => currentUser()]);
+    case 'GET':
+        if (!isLoggedIn()) { http_response_code(401); echo json_encode(['error'=>'Unauthorized']); exit; }
+        echo json_encode(['user' => [
+            'id'        => $_SESSION['user_id'],
+            'username'  => $_SESSION['username']  ?? null,
+            'full_name' => $_SESSION['full_name']  ?? null,
+            'email'     => $_SESSION['email']      ?? null,
+            'user_type' => $_SESSION['user_type']  ?? null,
+        ]]);
         break;
 
-    case "POST":
+    case 'POST':
         $action = $_GET['action'] ?? '';
 
         if ($action === 'register') {
-            $data = json_decode(file_get_contents("php://input"), true);
+            $data      = json_decode(file_get_contents('php://input'), true) ?? [];
+            $username  = trim($data['username']  ?? '');
+            $email     = trim($data['email']     ?? '');
+            $password  = $data['password']        ?? '';
+            $fullName  = trim($data['full_name']  ?? '');
+            $userType  = in_array($data['user_type'] ?? '', ['student','professor']) ? $data['user_type'] : 'student';
 
-            $username = $data['username'] ?? '';
-            $email = $data['email'] ?? '';
-            $password = $data['password'] ?? '';
-            $full_name = $data['full_name'] ?? '';
-            $user_type = $data['user_type'] ?? 'student';
-
-            if (!$username || !$email || !$password || !$full_name) {
-                echo json_encode(["error" => "Missing required fields"]);
-                exit;
+            if (!$username || !$email || !$password || !$fullName) {
+                http_response_code(400); echo json_encode(['error'=>'Missing required fields']); exit;
+            }
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400); echo json_encode(['error'=>'Invalid email']); exit;
             }
 
-            $hashed = password_hash($password, PASSWORD_DEFAULT);
-
-            $stmt = $conn->prepare("INSERT INTO users (username, email, password, full_name, user_type) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$username, $email, $hashed, $full_name, $user_type]);
-
-            if ($stmt) {
-                echo json_encode(["success" => true, "message" => "User registered successfully"]);
-            } else {
-                echo json_encode(["error" => "Registration failed"]);
+            $pdo  = getDB();
+            $chk  = $pdo->prepare("SELECT id FROM users WHERE email=?");
+            $chk->execute([$email]);
+            if ($chk->fetch()) {
+                http_response_code(409); echo json_encode(['error'=>'Email already registered']); exit;
             }
+
+            $pdo->prepare("INSERT INTO users (username,email,password,full_name,user_type) VALUES (?,?,?,?,?)")
+                ->execute([$username, $email, hashPassword($password), $fullName, $userType]);
+
+            echo json_encode(['success'=>true, 'message'=>'User registered successfully']);
+
         } elseif ($action === 'login') {
-            $data = json_decode(file_get_contents("php://input"), true);
+            $data     = json_decode(file_get_contents('php://input'), true) ?? [];
+            $email    = trim($data['email']    ?? '');
+            $password = $data['password']       ?? '';
 
-            $email = $data['email'] ?? '';
-            $password = $data['password'] ?? '';
-
-            $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+            $pdo  = getDB();
+            $stmt = $pdo->prepare("SELECT id, username, full_name, email, user_type, password FROM users WHERE email=?");
             $stmt->execute([$email]);
+            $user = $stmt->fetch();
 
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($user && password_verify($password, $user['password'])) {
-                loginUser([
-                    "id" => $user['id'],
-                    "username" => $user['username'],
-                    "full_name" => $user['full_name'],
-                    "email" => $user['email'],
-                    "user_type" => $user['user_type']
-                ]);
-
-                echo json_encode([
-                    "success" => true,
-                    "user" => currentUser()
-                ]);
+            if ($user && verifyPassword($password, $user['password'])) {
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['username']  = $user['username'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['email']     = $user['email'];
+                $_SESSION['user_type'] = $user['user_type'];
+                echo json_encode(['success'=>true, 'user'=>[
+                    'id'        => $user['id'],
+                    'full_name' => $user['full_name'],
+                    'user_type' => $user['user_type'],
+                ]]);
             } else {
-                echo json_encode(["error" => "Invalid credentials"]);
+                http_response_code(401); echo json_encode(['error'=>'Invalid credentials']);
             }
+
         } elseif ($action === 'logout') {
-            logoutUser();
-            echo json_encode(["success" => true]);
+            $_SESSION = [];
+            if (ini_get('session.use_cookies')) {
+                $p = session_get_cookie_params();
+                setcookie(session_name(), '', time()-42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+            }
+            session_destroy();
+            echo json_encode(['success'=>true]);
         }
         break;
 
-    case "PUT":
-        requireLogin();
+    case 'PUT':
+        if (!isLoggedIn()) { http_response_code(401); echo json_encode(['error'=>'Unauthorized']); exit; }
+        $data     = json_decode(file_get_contents('php://input'), true) ?? [];
+        $userId   = (int)($_SESSION['user_id'] ?? 0);
+        $fullName = trim($data['full_name'] ?? '');
+        $username = trim($data['username']  ?? '');
 
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id = currentUser()['id'];
-        $full_name = $data['full_name'] ?? '';
-        $username = $data['username'] ?? '';
+        $sets   = ['full_name = ?'];
+        $params = [$fullName];
+        if ($username) { $sets[] = 'username = ?'; $params[] = $username; }
+        $params[] = $userId;
 
-        $sql = "UPDATE users SET full_name = ?";
-        $params = [$full_name];
-
-        if ($username) {
-            $sql .= ", username = ?";
-            $params[] = $username;
-        }
-
-        $sql .= " WHERE id = ?";
-        $params[] = $id;
-
-        $stmt = $conn->prepare($sql);
-        echo json_encode(["success" => $stmt->execute($params)]);
+        $pdo = getDB();
+        $pdo->prepare("UPDATE users SET " . implode(', ', $sets) . " WHERE id=?")->execute($params);
+        if ($fullName) $_SESSION['full_name'] = $fullName;
+        echo json_encode(['success'=>true]);
         break;
+
+    default:
+        http_response_code(405);
+        echo json_encode(['error'=>'Method not allowed']);
 }

@@ -56,7 +56,7 @@ require __DIR__ . '/../includes/nagah/nav.php';
             </span>
             <span class="text-xs font-bold uppercase tracking-wide" style="color:#7c3aed">لوحة الإدارة</span>
         </div>
-        <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">مرحباً، <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'مدير'); ?> 👨‍💼</h1>
+        <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">لوحة الإدارة</h1>
         <p class="text-slate-500 mt-1 text-sm">إدارة شاملة للمنصة — المستخدمون، الكورسات، والإحصائيات</p>
     </div>
     <div class="flex gap-3 flex-wrap">

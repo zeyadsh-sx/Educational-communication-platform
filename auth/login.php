@@ -9,7 +9,12 @@ $error = '';
 $success = '';
 
 if (isLoggedIn()) {
-    redirect(isProfessor() ? '/admin/dashboard.php' : '/student/dashboard.php');
+    $dest = match(getCurrentUserType()) {
+        'admin'     => '/admin_panel/dashboard.php',
+        'professor' => '/professor/dashboard.php',
+        default     => '/student/dashboard.php',
+    };
+    redirect($dest);
     exit;
 }
 

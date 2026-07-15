@@ -184,5 +184,11 @@ document.querySelectorAll('.reveal').forEach(el => {
 /* ── Lucide icons ── */
 if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
+<?php
+// Load main.js if it exists
+$mainJs = __DIR__ . '/../../js/main.js';
+if (file_exists($mainJs)): ?>
+<script src="<?php echo $base; ?>/js/main.js" defer></script>
+<?php endif; ?>
 </body>
 </html>

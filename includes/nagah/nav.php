@@ -43,8 +43,9 @@ function navActive(string $path, string $curr): string {
             <!-- Auth actions -->
             <div class="flex items-center gap-2 shrink-0">
                 <?php if (isLoggedIn()):
-                    $dashUrl = isProfessor() ? $base.'/professor/dashboard.php' : $base.'/student/dashboard.php';
+                    $dashUrl    = isProfessor() ? $base.'/professor/dashboard.php' : $base.'/student/dashboard.php';
                     $notifCount = function_exists('getUnreadNotificationsCount') ? getUnreadNotificationsCount(getCurrentUserId()) : 0;
+                    $isDashPage = str_contains($currUrl, 'dashboard.php');
                 ?>
                     <!-- Notifications bell -->
                     <a href="<?php echo $base; ?>/notifications/view.php"
@@ -56,14 +57,21 @@ function navActive(string $path, string $curr): string {
                         </span>
                         <?php endif; ?>
                     </a>
-                    <!-- Avatar + dashboard -->
+                    <!-- زر لوحة التحكم — يظهر في كل صفحة -->
+                    <?php if (!$isDashPage): ?>
                     <a href="<?php echo $dashUrl; ?>"
                        class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 btn-primary-nagah">
-                        <span class="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center text-xs font-bold">
-                            <?php echo mb_substr($_SESSION['full_name'] ?? 'U', 0, 1); ?>
-                        </span>
+                        <i data-lucide="layout-dashboard" style="width:15px;height:15px;"></i>
                         لوحة التحكم
                     </a>
+                    <?php else: ?>
+                    <span class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-blue-50 text-blue-700">
+                        <span class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold">
+                            <?php echo mb_substr($_SESSION['full_name'] ?? 'U', 0, 1); ?>
+                        </span>
+                        <?php echo htmlspecialchars(mb_substr($_SESSION['full_name'] ?? '', 0, 20)); ?>
+                    </span>
+                    <?php endif; ?>
                 <?php else: ?>
                     <a href="<?php echo $base; ?>/auth/login.php"
                        class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition">
@@ -100,10 +108,13 @@ function navActive(string $path, string $curr): string {
             </div>
             <?php if (isLoggedIn()): ?>
             <div class="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                <?php if (!$isDashPage): ?>
                 <a href="<?php echo $dashUrl ?? $base.'/student/dashboard.php'; ?>"
                    class="flex items-center justify-center gap-2 py-2.5 rounded-full btn-primary-nagah font-bold text-sm">
-                    <i data-lucide="layout-dashboard" style="width:15px;height:15px;"></i> لوحة التحكم
+                    <i data-lucide="layout-dashboard" style="width:15px;height:15px;"></i>
+                    لوحة التحكم
                 </a>
+                <?php endif; ?>
                 <a href="<?php echo $base; ?>/auth/logout.php"
                    class="text-center text-sm text-red-500 font-medium py-2">تسجيل الخروج</a>
             </div>

@@ -17,7 +17,7 @@ $message     = '';
 $messageKind = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $message = 'توكن الأمان غير صحيح.';
         $messageKind = 'error';
     } else {
@@ -55,20 +55,30 @@ $stmt->execute([$userId]);
 $user = $stmt->fetch();
 
 // Stats
-$coursesCount      = 0;
-$notifCount        = 0;
-$enrollmentsCount  = 0;
+$coursesCount     = 0;
+$notifCount       = 0;
+$enrollmentsCount = 0;
 try {
     if ($user['user_type'] === 'professor') {
-        $coursesCount = (int) $pdo->prepare("SELECT COUNT(*) FROM courses WHERE professor_id = ?")->execute([$userId]) ? $pdo->query("SELECT COUNT(*) FROM courses WHERE professor_id = $userId")->fetchColumn() : 0;
+        $cStmt = $pdo->prepare("SELECT COUNT(*) FROM courses WHERE professor_id = ?");
+        $cStmt->execute([$userId]);
+        $coursesCount = (int)$cStmt->fetchColumn();
     } else {
-        $enrollmentsCount = (int) $pdo->query("SELECT COUNT(*) FROM course_enrollments WHERE student_id = $userId")->fetchColumn();
+        $eStmt = $pdo->prepare("SELECT COUNT(*) FROM course_enrollments WHERE student_id = ?");
+        $eStmt->execute([$userId]);
+        $enrollmentsCount = (int)$eStmt->fetchColumn();
     }
-    $notifCount = (int) $pdo->query("SELECT COUNT(*) FROM notifications WHERE user_id = $userId AND is_read = FALSE")->fetchColumn();
+    $nStmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = FALSE");
+    $nStmt->execute([$userId]);
+    $notifCount = (int)$nStmt->fetchColumn();
 } catch (Exception $e) {}
 
 $initials     = mb_substr($user['full_name'] ?? 'U', 0, 2);
-$dashboardUrl = $user['user_type'] === 'professor' ? $base . '/admin/dashboard.php' : $base . '/student/dashboard.php';
+$dashboardUrl = match($user['user_type']) {
+    'admin'     => $base . '/admin_panel/dashboard.php',
+    'professor' => $base . '/professor/dashboard.php',
+    default     => $base . '/student/dashboard.php',
+};
 $pageTitle    = 'الملف الشخصي | أكاديمية ماستر';
 
 require __DIR__ . '/../includes/nagah/head.php';

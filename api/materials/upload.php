@@ -1,77 +1,102 @@
 <?php
+/**
+ * API — رفع مادة دراسية (base64)
+ * POST /api/materials/upload.php
+ * Body JSON: { course_id, file: { name, content (base64) } }
+ */
+if (session_status() === PHP_SESSION_NONE) session_start();
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/auth.php';
-require_once __DIR__ . '/../../includes/gamification.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-requireLogin();
-
-$database = new Database();
-$conn = $database->connect();
-
-$data = json_decode(file_get_contents('php://input'), true);
-$course_id = $data['course_id'] ?? null;
-$file_data = $data['file'] ?? null; // Assuming base64 encoded file
-
-if (!$course_id || !$file_data) {
-  http_response_code(400);
-  echo json_encode(["success" => false, "message" => "Course ID and file data are required"]);
-  exit;
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
 }
 
-$user_id = $_SESSION['user']['id'];
-$user_type = $_SESSION['user']['user_type'];
+$userId   = (int)($_SESSION['user_id']   ?? 0);
+$userType = $_SESSION['user_type'] ?? '';
 
-if ($user_type !== 'professor') {
-  http_response_code(403);
-  echo json_encode(["success" => false, "message" => "Only professors can upload materials"]);
-  exit;
+if ($userType !== 'professor') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Only professors can upload materials']);
+    exit;
 }
+
+$data     = json_decode(file_get_contents('php://input'), true);
+$courseId = (int)($data['course_id'] ?? 0);
+$fileData = $data['file'] ?? null;
+
+if (!$courseId || !$fileData || empty($fileData['name']) || empty($fileData['content'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Course ID and file data are required']);
+    exit;
+}
+
+$pdo = getDB();
 
 // Verify professor owns the course
-$courseStmt = $conn->prepare("SELECT id FROM courses WHERE id = ? AND professor_id = ?");
-$courseStmt->execute([$course_id, $user_id]);
-$course = $courseStmt->fetch();
-
-if (!$course) {
-  http_response_code(403);
-  echo json_encode(["success" => false, "message" => "You don't own this course"]);
-  exit;
+$chk = $pdo->prepare("SELECT id FROM courses WHERE id=? AND professor_id=?");
+$chk->execute([$courseId, $userId]);
+if (!$chk->fetch()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => "You don't own this course"]);
+    exit;
 }
 
-// Decode base64 file
-$file_content = base64_decode($file_data['content']);
-$file_name = time() . "_" . $file_data['name'];
-$file_path = "../../uploads/materials/" . $file_name;
+// Decode and validate
+$fileContent = base64_decode($fileData['content'], true);
+if ($fileContent === false) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid file data (base64 decode failed)']);
+    exit;
+}
 
-// Ensure upload directory exists
-$upload_dir = dirname($file_path);
-if (!is_dir($upload_dir)) {
-  mkdir($upload_dir, 0755, true);
+// Validate extension
+$originalName = basename($fileData['name']);
+$ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+$allowed      = ['pdf','doc','docx','ppt','pptx','txt','zip','xls','xlsx'];
+if (!in_array($ext, $allowed)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'File type not allowed']);
+    exit;
 }
 
 // Save file
-if (file_put_contents($file_path, $file_content) === false) {
-  http_response_code(500);
-  echo json_encode(["success" => false, "message" => "Failed to save file"]);
-  exit;
+$uploadDir = __DIR__ . '/../../uploads/materials';
+if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+$safeBase = preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($originalName, PATHINFO_FILENAME));
+$fileName = ($safeBase ?: 'file') . '_' . time() . '.' . $ext;
+$filePath = $uploadDir . '/' . $fileName;
+
+if (file_put_contents($filePath, $fileContent) === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Failed to save file']);
+    exit;
 }
 
-$insertStmt = $conn->prepare("INSERT INTO materials (course_id, file_name, file_path, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, NOW())");
-$result = $insertStmt->execute([
-  $course_id,
-  $file_data['name'],
-  $file_path,
-  $user_id
-]);
+// Insert DB record
+try {
+    $pdo->prepare("
+        INSERT INTO materials (title, file_name, file_path, file_type, course_id, professor_id, uploaded_by, upload_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+    ")->execute([
+        $originalName,
+        $originalName,
+        'uploads/materials/' . $fileName,
+        $ext,
+        $courseId,
+        $userId,
+        $userId,
+    ]);
 
-if ($result) {
-  // Award points to professor for uploading material
-  awardPoints($user_id, 'upload_material');
-
-  echo json_encode(["success" => true, "message" => "Material uploaded successfully"]);
-} else {
-  // Clean up file if database insert failed
-  unlink($file_path);
-  http_response_code(500);
-  echo json_encode(["success" => false, "message" => "Failed to save material info"]);
+    echo json_encode(['success' => true, 'message' => 'Material uploaded successfully']);
+} catch (Exception $e) {
+    // Clean up file on DB failure
+    @unlink($filePath);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Failed to save material info']);
 }

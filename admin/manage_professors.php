@@ -5,7 +5,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../includes/nagah_theme.php';
 
-if (!isLoggedIn() || !isProfessor()) {
+if (!isLoggedIn() || !isAdmin()) {
     redirect('/auth/login.php');
     exit;
 }

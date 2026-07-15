@@ -22,11 +22,11 @@ function studentPageStart(string $title, string $sidebarKey = ''): void
     $GLOBALS['_student_layout_userId'] = getCurrentUserId();
     $base = nagahBaseUrl();
 
-    // Level badge
+    // Level badge — fetch points safely with prepared statement
     $pdo = getDB();
-    $pts = (int)$pdo->prepare("SELECT points FROM users WHERE id=?")->execute([$GLOBALS['_student_layout_userId']])
-        ? (int)$pdo->query("SELECT points FROM users WHERE id={$GLOBALS['_student_layout_userId']}")->fetchColumn()
-        : 0;
+    $ptsStmt = $pdo->prepare("SELECT COALESCE(points, 0) FROM users WHERE id = ?");
+    $ptsStmt->execute([$GLOBALS['_student_layout_userId']]);
+    $pts = (int)$ptsStmt->fetchColumn();
     $level = $pts >= 1000 ? ['👑','الأسطورة','#d97706'] :
             ($pts >= 500  ? ['🏆','بطل','#7c3aed'] :
             ($pts >= 200  ? ['🔥','نشط','#dc2626'] :

@@ -1,23 +1,15 @@
 <?php
 /**
- * Courses API - واجهة برمجة تطبيقات الكورسات
- * 
- * Endpoints:
- * - GET    /api/courses           - قائمة الكورسات
- * - POST   /api/courses           - إنشاء كورس جديد
- * - GET    /api/courses/{id}      - تفاصيل الكورس
- * - PUT    /api/courses/{id}      - تحديث الكورس
- * - DELETE /api/courses/{id}      - حذف الكورس
- * - POST   /api/courses/{id}/join - انضمام للكورس
- * - DELETE /api/courses/{id}/join - إلغاء الانضمام
- * - GET    /api/courses/{id}/students - قائمة الطلبة
+ * Courses API
  */
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/course_functions.php';
 
 // Set headers
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -29,40 +21,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Get request method and path
-$method = $_SERVER['REQUEST_METHOD'];
+$method     = $_SERVER['REQUEST_METHOD'];
 $requestUri = $_SERVER['REQUEST_URI'];
-$path = parse_url($requestUri, PHP_URL_PATH);
-$path = str_replace('/api/courses', '', $path);
-$path = trim($path, '/');
+$path       = parse_url($requestUri, PHP_URL_PATH);
+$path       = str_replace('/api/courses', '', $path);
+$path       = trim($path, '/');
 
 // Parse path to get course ID and sub-resources
-$parts = $path ? explode('/', $path) : [];
-$courseId = !empty($parts[0]) && is_numeric($parts[0]) ? (int)$parts[0] : null;
+$parts       = $path ? explode('/', $path) : [];
+$courseId    = !empty($parts[0]) && is_numeric($parts[0]) ? (int)$parts[0] : null;
 $subResource = !empty($parts[1]) ? $parts[1] : null;
 
-// Simple auth check (should be improved in production)
-function requireAuth() {
-    if (!isset($_SESSION['user_id'])) {
+// Auth helpers — use global session keys
+function requireAuth(): void {
+    if (!isLoggedIn()) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized']);
         exit;
     }
 }
 
-function requireProfessor() {
+function requireProfessor(): void {
     requireAuth();
-    if (!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'professor') {
+    if (!isProfessor()) {
         http_response_code(403);
-        echo json_encode(['error' => 'Forbidden - Professor access required']);
+        echo json_encode(['error' => 'Forbidden — Professor access required']);
         exit;
     }
 }
 
-function requireStudent() {
+function requireStudent(): void {
     requireAuth();
-    if (!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'student') {
+    if (!isStudent()) {
         http_response_code(403);
-        echo json_encode(['error' => 'Forbidden - Student access required']);
+        echo json_encode(['error' => 'Forbidden — Student access required']);
         exit;
     }
 }

@@ -60,7 +60,7 @@ require __DIR__ . '/../includes/nagah/nav.php';
 <div class="mb-8 flex items-start justify-between flex-wrap gap-4">
     <div>
         <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">
-            مرحباً، <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'طالب'); ?> 👋
+            لوحة الطالب
         </h1>
         <p class="text-slate-500 mt-1 text-sm">إليك نظرة شاملة على تقدمك الدراسي</p>
     </div>

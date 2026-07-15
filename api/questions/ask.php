@@ -1,63 +1,52 @@
 <?php
+/**
+ * API — طرح سؤال
+ * POST /api/questions/ask.php
+ */
+if (session_status() === PHP_SESSION_NONE) session_start();
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-requireLogin();
+if (!isLoggedIn()) { http_response_code(401); echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }
 
-$database = new Database();
-$conn = $database->connect();
+$userId   = (int)($_SESSION['user_id']   ?? 0);
+$userType = $_SESSION['user_type'] ?? '';
+
+if ($userType !== 'student') {
+    http_response_code(403); echo json_encode(['success'=>false,'message'=>'Students only']); exit;
+}
 
 $data = json_decode(file_get_contents('php://input'), true);
-
-if (!$data || !isset($data['course_id']) || !isset($data['question'])) {
-  http_response_code(400);
-  echo json_encode(["success" => false, "message" => "Missing required fields"]);
-  exit;
+if (!$data || empty($data['course_id']) || empty(trim($data['question'] ?? ''))) {
+    http_response_code(400); echo json_encode(['success'=>false,'message'=>'Missing required fields']); exit;
 }
 
-$course_id = $data['course_id'];
-$question_text = trim($data['question']);
+$courseId     = (int)$data['course_id'];
+$questionText = trim($data['question']);
+$pdo          = getDB();
 
-if (empty($question_text)) {
-  http_response_code(400);
-  echo json_encode(["success" => false, "message" => "Question cannot be empty"]);
-  exit;
+// Verify enrollment
+$enrStmt = $pdo->prepare("SELECT id FROM course_enrollments WHERE course_id=? AND student_id=? AND status='active'");
+$enrStmt->execute([$courseId, $userId]);
+if (!$enrStmt->fetch()) {
+    http_response_code(403); echo json_encode(['success'=>false,'message'=>'Not enrolled in this course']); exit;
 }
 
-// Verify user is enrolled in the course
-$user_id = $_SESSION['user']['id'];
-$enrollmentStmt = $conn->prepare("SELECT id FROM course_enrollments WHERE course_id = ? AND student_id = ? AND status = 'active'");
-$enrollmentStmt->execute([$course_id, $user_id]);
-$enrollment = $enrollmentStmt->fetch();
+// Get professor
+$cStmt = $pdo->prepare("SELECT professor_id FROM courses WHERE id=?");
+$cStmt->execute([$courseId]);
+$course = $cStmt->fetch();
+if (!$course) { http_response_code(404); echo json_encode(['success'=>false,'message'=>'Course not found']); exit; }
 
-if (!$enrollment) {
-  http_response_code(403);
-  echo json_encode(["success" => false, "message" => "Not enrolled in this course"]);
-  exit;
+$pdo->prepare("INSERT INTO questions (question_text,student_id,professor_id,course_id,status,created_at) VALUES (?,?,?,?,'pending',NOW())")
+    ->execute([$questionText, $userId, $course['professor_id'], $courseId]);
+
+// Award points
+if (function_exists('awardPoints')) {
+    require_once __DIR__ . '/../../includes/gamification.php';
+    awardPoints($userId, 'ask_question');
 }
 
-// Get professor_id from course
-$courseStmt = $conn->prepare("SELECT professor_id FROM courses WHERE id = ?");
-$courseStmt->execute([$course_id]);
-$course = $courseStmt->fetch();
-
-if (!$course) {
-  http_response_code(404);
-  echo json_encode(["success" => false, "message" => "Course not found"]);
-  exit;
-}
-
-$insertStmt = $conn->prepare("INSERT INTO questions (question_text, student_id, professor_id, course_id, status, created_at) VALUES (?, ?, ?, ?, 'pending', NOW())");
-$result = $insertStmt->execute([
-  $question_text,
-  $user_id,
-  $course['professor_id'],
-  $course_id
-]);
-
-if ($result) {
-  echo json_encode(["success" => true, "message" => "Question submitted successfully"]);
-} else {
-  http_response_code(500);
-  echo json_encode(["success" => false, "message" => "Failed to submit question"]);
-}
+echo json_encode(['success'=>true,'message'=>'Question submitted successfully']);

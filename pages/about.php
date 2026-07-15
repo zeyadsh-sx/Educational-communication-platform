@@ -95,10 +95,7 @@ $base = nagahBaseUrl();
                         <?php endforeach; ?>
                     </ul>
                 </div>
-                <div class="hidden lg:block relative h-full min-h-[400px]">
-                    <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=700&h=600&fit=crop" alt="طلاب" class="w-full h-full object-cover">
-                    <div class="absolute inset-0" style="background:linear-gradient(to right,rgba(255,255,255,0.3),transparent)"></div>
-                </div>
+
             </div>
         </div>
     </div>

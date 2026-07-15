@@ -14,7 +14,7 @@ if (isLoggedIn()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = 'توكن الأمان غير صحيح. الرجاء تحديث الصفحة والمحاولة مجدداً';
     } else {
         $email = getSafePost('email', '', 'email');

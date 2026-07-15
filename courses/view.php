@@ -65,7 +65,11 @@ if ($userType === 'professor' && $course['professor_id'] == $userId) {
 
 $studentCount = getCourseStudentCount($courseId);
 $pageTitle = htmlspecialchars($course['course_name']) . ' | أكاديمية ماستر';
-$dashboardUrl = $userType === 'professor' ? $base . '/admin/dashboard.php' : $base . '/student/dashboard.php';
+$dashboardUrl = match($userType) {
+    'admin'     => $base . '/admin_panel/dashboard.php',
+    'professor' => $base . '/professor/dashboard.php',
+    default     => $base . '/student/dashboard.php',
+};
 
 require __DIR__ . '/../includes/nagah/head.php';
 require __DIR__ . '/../includes/nagah/nav.php';

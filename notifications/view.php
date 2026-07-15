@@ -34,7 +34,12 @@ function notifIcon(string $msg): array {
 $unreadCount = 0;
 foreach ($notifications as $n) if (!$n['is_read']) $unreadCount++;
 
-$dashboardUrl = isProfessor() ? $base . '/admin/dashboard.php' : $base . '/student/dashboard.php';
+$userType     = getCurrentUserType();
+$dashboardUrl = match($userType) {
+    'admin'     => $base . '/admin_panel/dashboard.php',
+    'professor' => $base . '/professor/dashboard.php',
+    default     => $base . '/student/dashboard.php',
+};
 $pageTitle    = 'الإشعارات | أكاديمية ماستر';
 require __DIR__ . '/../includes/nagah/head.php';
 require __DIR__ . '/../includes/nagah/nav.php';

@@ -1,14 +1,30 @@
 <?php
+/**
+ * admin/dashboard.php — توجيه للصفحات الصحيحة
+ * هذا الملف كان لوحة تحكم قديمة. الآن يُوجّه حسب نوع المستخدم.
+ */
 session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/course_functions.php';
-require_once __DIR__ . '/../includes/nagah_theme.php';
 
-if (!isLoggedIn() || !isProfessor()) {
+if (!isLoggedIn()) {
     redirect('/auth/login.php');
     exit;
 }
+
+$base = getBaseUrl();
+
+switch (getCurrentUserType()) {
+    case 'admin':
+        header('Location: ' . $base . '/admin_panel/dashboard.php');
+        break;
+    case 'professor':
+        header('Location: ' . $base . '/professor/dashboard.php');
+        break;
+    default:
+        header('Location: ' . $base . '/student/dashboard.php');
+}
+exit;
 
 $userId   = getCurrentUserId();
 $base     = nagahBaseUrl();
@@ -81,7 +97,7 @@ require __DIR__ . '/../includes/nagah/nav.php';
             <!-- Welcome -->
             <div class="mb-8">
                 <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">
-                    مرحباً، <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'أستاذ'); ?> 👋
+                    لوحة تحكم المعلم
                 </h1>
                 <p class="text-slate-500 mt-1 text-sm">إليك ملخص شامل لنشاطك اليوم</p>
             </div>

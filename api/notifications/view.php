@@ -1,43 +1,51 @@
 <?php
+/**
+ * API — جلب إشعارات المستخدم الحالي
+ * GET /api/notifications/view.php
+ */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-requireLogin();
-
-$database = new Database();
-$conn = $database->connect();
-
-$user_id = $_GET['user_id'] ?? null;
-
-if (!$user_id) {
-  http_response_code(400);
-  echo json_encode(["success" => false, "message" => "User ID is required"]);
-  exit;
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
 }
 
-// Only allow users to view their own notifications
-$current_user_id = $_SESSION['user']['id'];
-if ($user_id != $current_user_id) {
-  http_response_code(403);
-  echo json_encode(["success" => false, "message" => "Access denied"]);
-  exit;
+// Use flat session keys — consistent with the rest of the app
+$userId = (int)($_SESSION['user_id'] ?? 0);
+
+if (!$userId) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
 }
 
-$stmt = $conn->prepare("
-    SELECT * FROM notifications 
-    WHERE user_id = ? 
-    ORDER BY created_at DESC 
-    LIMIT 50
-");
-$stmt->execute([$user_id]);
+try {
+    $pdo = getDB();
 
-$notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("
+        SELECT id, message, is_read, type, created_at
+        FROM notifications
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 50
+    ");
+    $stmt->execute([$userId]);
+    $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Mark notifications as read
-$updateStmt = $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0");
-$updateStmt->execute([$user_id]);
+    // Mark as read
+    $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0")
+        ->execute([$userId]);
 
-echo json_encode([
-  "success" => true,
-  "notifications" => $notifications
-]);
+    echo json_encode(['success' => true, 'notifications' => $notifications]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Server error']);
+}

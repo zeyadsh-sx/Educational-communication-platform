@@ -57,17 +57,17 @@ try {
         die("أنت لا تملك صلاحية الوصول إلى هذا الملف");
     }
     
-    // Sanitize file path to prevent traversal
-    $sanitizedPath = sanitizeFilePath($material['file_path']);
-    $baseDir = realpath(__DIR__ . '/../uploads/materials');
-    $fullPath = realpath($baseDir . '/' . $sanitizedPath);
-    
-    // Verify file is within uploads directory
-    if (!$fullPath || strpos($fullPath, $baseDir) !== 0 || !file_exists($fullPath)) {
-        logError('File traversal attempt', [
-            'user_id' => $userId,
+    // Secure path resolution — file_path is stored as 'uploads/materials/filename.ext'
+    $baseDir  = realpath(__DIR__ . '/..');
+    $fullPath = realpath($baseDir . '/' . $material['file_path']);
+
+    // Verify file is within the uploads directory (prevent path traversal)
+    $uploadsDir = realpath($baseDir . '/uploads');
+    if (!$fullPath || !$uploadsDir || strpos($fullPath, $uploadsDir) !== 0 || !file_exists($fullPath)) {
+        logError('File not found or traversal attempt', [
+            'user_id'     => $userId,
             'material_id' => $materialId,
-            'requested_path' => $material['file_path']
+            'file_path'   => $material['file_path'],
         ]);
         http_response_code(404);
         die("الملف غير موجود");

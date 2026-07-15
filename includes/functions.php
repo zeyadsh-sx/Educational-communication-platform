@@ -264,6 +264,14 @@ function verifyCSRFToken($token)
     return hash_equals($_SESSION['csrf_token'], $token);
 }
 
+// Alias — validateCSRFToken is the canonical name used across the app
+if (!function_exists('validateCSRFToken')) {
+    function validateCSRFToken($token): bool
+    {
+        return verifyCSRFToken($token);
+    }
+}
+
 // Analytics Functions
 function getProfessorAnalytics($userId)
 {

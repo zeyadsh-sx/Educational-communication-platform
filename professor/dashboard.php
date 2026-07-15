@@ -42,7 +42,7 @@ require __DIR__ . '/../includes/nagah/nav.php';
 <!-- Welcome -->
 <div class="mb-8 flex items-start justify-between flex-wrap gap-4">
     <div>
-        <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">مرحباً، <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'أستاذ'); ?> 👨‍🏫</h1>
+        <h1 class="display font-semibold text-2xl sm:text-3xl text-slate-900">لوحة تحكم المعلم</h1>
         <p class="text-slate-500 mt-1 text-sm">إدارة كورساتك وتفاعلك مع الطلاب من مكان واحد</p>
     </div>
     <div class="flex gap-3 flex-wrap">
@@ -188,7 +188,7 @@ require __DIR__ . '/../includes/nagah/nav.php';
                 </div>
                 <p class="text-xs text-slate-500 truncate"><?php echo htmlspecialchars(mb_substr($q['question_text'], 0, 70)); ?>…</p>
                 <?php if ($q['status'] === 'pending'): ?>
-                <a href="<?php echo $base; ?>/questions/answer.php?id=<?php echo $q['id']; ?>" class="text-xs font-bold text-blue-600 hover:underline mt-1.5 inline-block">رد الآن ←</a>
+                <a href="<?php echo $base; ?>/professor/questions.php#q-<?php echo $q['id']; ?>" class="text-xs font-bold text-blue-600 hover:underline mt-1.5 inline-block">رد الآن ←</a>
                 <?php endif; ?>
             </div>
             <?php endforeach; ?>

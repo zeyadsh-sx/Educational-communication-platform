@@ -254,17 +254,15 @@ require __DIR__ . '/../includes/nagah/nav.php';
         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
         <input type="hidden" name="action" value="record_attendance">
 
-        <div class="flex items-center gap-4 flex-wrap mb-6">
+        <div class="flex items-end gap-4 flex-wrap mb-6">
             <div>
                 <label class="text-sm font-semibold text-slate-700 block mb-1.5">تاريخ الحصة</label>
                 <input type="date" name="lesson_date" value="<?php echo $attendanceDate; ?>"
                        class="field-input w-auto" max="<?php echo date('Y-m-d'); ?>"
-                       onchange="this.form.submit()">
-                <input type="hidden" name="action" value="none">
+                       onchange="window.location='?course_id=<?php echo $courseId; ?>&tab=attendance&date='+this.value">
             </div>
             <p class="text-sm text-slate-500 mt-5"><?php echo count($students); ?> طالب</p>
         </div>
-        <input type="hidden" name="action" value="record_attendance">
 
         <?php if (empty($students)): ?>
         <p class="text-center text-slate-400 py-8 text-sm">لا يوجد طلاب</p>
