@@ -193,8 +193,10 @@ if (!function_exists('generateCSRFToken')) {
     }
 }
 
-function validateCSRFToken($token) {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+if (!function_exists('validateCSRFToken')) {
+    function validateCSRFToken($token) {
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    }
 }
 
 /**
